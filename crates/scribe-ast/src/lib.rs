@@ -80,6 +80,12 @@ pub enum Inline {
     FootnoteRef(String),
     /// Inline math equation (`$...$` or `\(...\)`).
     InlineMath(String),
+    /// Inline image reference. Loaded and sized by the emitter.
+    Image {
+        url: String,
+        alt: String,
+        title: String,
+    },
     /// Hard line break (two trailing spaces or `\` at end of line).
     HardBreak,
     /// Soft line break rendered as a space.

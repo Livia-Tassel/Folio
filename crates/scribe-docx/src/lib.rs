@@ -29,6 +29,14 @@ const ABSTRACT_NUM_ORDERED: usize = 2;
 
 /// Convert a [`Document`] into `.docx` bytes.
 pub fn emit(doc: &Document) -> anyhow::Result<Vec<u8>> {
+    emit_with_base(doc, None)
+}
+
+/// Emit with an explicit base directory used to resolve relative image paths.
+pub fn emit_with_base(
+    doc: &Document,
+    base_dir: Option<std::path::PathBuf>,
+) -> anyhow::Result<Vec<u8>> {
     let mut out = Docx::new();
     out = register_builtin_styles(out);
     out = register_numbering(out);
@@ -37,6 +45,7 @@ pub fn emit(doc: &Document) -> anyhow::Result<Vec<u8>> {
         footnotes: &doc.footnotes,
         math_map: HashMap::new(),
         math_counter: 0,
+        base_dir,
     };
 
     for block in &doc.blocks {
@@ -59,6 +68,8 @@ struct EmitCtx<'a> {
     /// OMML XML that should replace it after `docx-rs` packs the file.
     math_map: HashMap<String, MathReplacement>,
     math_counter: usize,
+    /// Optional base path used to resolve relative image URLs.
+    base_dir: Option<std::path::PathBuf>,
 }
 
 impl<'a> EmitCtx<'a> {
@@ -403,6 +414,19 @@ fn inline_runs(inlines: &[Inline], style: RunStyle, ctx: &mut EmitCtx) -> Vec<Ru
                 let token = ctx.register_inline_math(latex);
                 runs.push(style.apply(Run::new().add_text(&token)));
             }
+            Inline::Image { url, alt, title: _ } => {
+                if let Some(run) = emit_image_run(url, alt, ctx) {
+                    runs.push(run);
+                } else {
+                    // Fallback: render alt text so the image placeholder is visible.
+                    let text = if alt.is_empty() {
+                        format!("[image: {url}]")
+                    } else {
+                        format!("[image: {alt}]")
+                    };
+                    runs.push(style.apply(Run::new().add_text(&text).italic()));
+                }
+            }
         }
     }
     runs
@@ -428,6 +452,35 @@ fn emit_footnote_run(label: &str, ctx: &mut EmitCtx, style: RunStyle) -> Run {
     }
 
     style.apply(Run::new().add_footnote_reference(footnote))
+}
+
+/// Load `url` (possibly relative to `ctx.base_dir`), size to fit the page
+/// width, and return a `Run` containing the embedded image. Returns `None`
+/// if the image cannot be loaded — the caller is expected to fall back to
+/// rendering the alt text.
+fn emit_image_run(url: &str, _alt: &str, ctx: &EmitCtx) -> Option<Run> {
+    // Don't try to fetch remote images — that needs HTTP and introduces
+    // a network dep. Authors who want a remote image should download it.
+    if url.starts_with("http://") || url.starts_with("https://") || url.starts_with("data:") {
+        return None;
+    }
+
+    let path = resolve_path(url, ctx.base_dir.as_deref())?;
+    let img = scribe_images::load(&path).ok()?;
+    let (w_emu, h_emu) = img.page_fit_emu(None);
+    let pic = docx_rs::Pic::new_with_dimensions(img.bytes, img.width_px, img.height_px)
+        .size(w_emu, h_emu);
+    Some(Run::new().add_image(pic))
+}
+
+fn resolve_path(url: &str, base: Option<&std::path::Path>) -> Option<std::path::PathBuf> {
+    let raw = std::path::PathBuf::from(url);
+    if raw.is_absolute() {
+        Some(raw)
+    } else {
+        base.map(|b| b.join(&raw))
+            .or_else(|| Some(std::env::current_dir().ok()?.join(&raw)))
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default)]

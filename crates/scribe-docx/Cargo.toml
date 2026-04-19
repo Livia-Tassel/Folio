@@ -8,6 +8,7 @@ license.workspace = true
 scribe-ast = { workspace = true }
 scribe-highlight = { workspace = true }
 scribe-math = { workspace = true }
+scribe-images = { workspace = true }
 docx-rs = { workspace = true }
 anyhow = { workspace = true }
 zip = { workspace = true }

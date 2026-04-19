@@ -11,16 +11,23 @@ pub mod error;
 
 pub use error::{ConvertError, Result};
 
-/// Convert a Markdown string to `.docx` bytes.
+/// Convert a Markdown string to `.docx` bytes. Relative image paths can't
+/// be resolved in string mode; use [`convert_file`] for that.
 pub fn convert_string(markdown: &str) -> Result<Vec<u8>> {
     let doc = scribe_parser::parse(markdown);
     scribe_docx::emit(&doc).map_err(ConvertError::Emit)
 }
 
 /// Convert a Markdown file at `input` into a `.docx` file at `output`.
+///
+/// Relative image paths inside the Markdown are resolved relative to
+/// the input file's parent directory.
 pub fn convert_file(input: impl AsRef<Path>, output: impl AsRef<Path>) -> Result<()> {
-    let markdown = fs::read_to_string(input.as_ref()).map_err(ConvertError::Read)?;
-    let bytes = convert_string(&markdown)?;
+    let input_path = input.as_ref();
+    let markdown = fs::read_to_string(input_path).map_err(ConvertError::Read)?;
+    let doc = scribe_parser::parse(&markdown);
+    let base = input_path.parent().map(|p| p.to_path_buf());
+    let bytes = scribe_docx::emit_with_base(&doc, base).map_err(ConvertError::Emit)?;
     fs::write(output.as_ref(), bytes).map_err(ConvertError::Write)?;
     Ok(())
 }

@@ -80,6 +80,13 @@ enum Container {
     },
     /// Inline container (Strong/Emphasis/Strikethrough/Link).
     Inline(InlineKind),
+    /// Image — pulldown-cmark emits Text events between Start(Image) and
+    /// End(Image) which become the alt text.
+    Image {
+        url: String,
+        title: String,
+        alt: String,
+    },
     /// Footnote definition — collects blocks until the matching End.
     FootnoteDef(FootnoteDef),
 }
@@ -134,7 +141,7 @@ impl Builder {
         match event {
             Event::Start(tag) => self.on_start(tag),
             Event::End(tag_end) => self.on_end(tag_end),
-            Event::Text(s) => self.push_inline(Inline::Text(s.into_string())),
+            Event::Text(s) => self.push_text(s.into_string()),
             Event::Code(s) => self.push_inline(Inline::Code(s.into_string())),
             Event::SoftBreak => self.push_inline(Inline::SoftBreak),
             Event::HardBreak => self.push_inline(Inline::HardBreak),
@@ -227,6 +234,17 @@ impl Builder {
                     title: title.into_string(),
                     content: Vec::new(),
                 }));
+            }
+            Tag::Image {
+                dest_url, title, ..
+            } => {
+                // We collect the image's alt text from its children (Text events
+                // until matching TagEnd::Image), so mirror the Link container.
+                self.stack.push(Container::Image {
+                    url: dest_url.into_string(),
+                    title: title.into_string(),
+                    alt: String::new(),
+                });
             }
             Tag::Table(aligns) => {
                 self.stack.push(Container::Table {
@@ -356,6 +374,9 @@ impl Builder {
             (Container::FootnoteDef(fd), TagEnd::FootnoteDefinition) => {
                 self.doc.add_footnote(fd.label, fd.blocks);
             }
+            (Container::Image { url, title, alt }, TagEnd::Image) => {
+                self.push_inline(Inline::Image { url, title, alt });
+            }
             // Mismatched container/end: discard silently. A malformed event
             // stream from pulldown-cmark is not expected in practice.
             _ => {}
@@ -379,6 +400,21 @@ impl Builder {
             target.push(inline);
         }
     }
+
+    /// Route a Text event into the topmost image's alt text if one is open,
+    /// otherwise into the nearest inline sink.
+    fn push_text(&mut self, s: String) {
+        for container in self.stack.iter_mut().rev() {
+            if let Container::Image { alt, .. } = container {
+                if !alt.is_empty() {
+                    alt.push(' ');
+                }
+                alt.push_str(&s);
+                return;
+            }
+        }
+        self.push_inline(Inline::Text(s));
+    }
 }
 
 /// Get the inline sink of the topmost container that accepts inlines.
@@ -395,6 +431,10 @@ fn current_inline_vec(stack: &mut [Container]) -> Option<&mut Vec<Inline>> {
                 InlineKind::Strikethrough(v) => return Some(v),
                 InlineKind::Link { content, .. } => return Some(content),
             },
+            Container::Image { .. } => {
+                // Alt text is pushed via the image handler below, not here.
+                return None;
+            }
             _ => continue,
         }
     }
