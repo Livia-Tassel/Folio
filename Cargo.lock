@@ -3199,6 +3199,7 @@ dependencies = [
  "docx-rs",
  "scribe-ast",
  "scribe-highlight",
+ "scribe-math",
  "zip 2.4.2",
 ]
 

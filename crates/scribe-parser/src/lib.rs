@@ -18,6 +18,7 @@ pub fn parse(markdown: &str) -> Document {
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_TASKLISTS);
     options.insert(Options::ENABLE_SMART_PUNCTUATION);
+    options.insert(Options::ENABLE_MATH);
 
     let parser = Parser::new_ext(markdown, options);
     let mut builder = Builder::new();
@@ -146,7 +147,18 @@ impl Builder {
             Event::FootnoteReference(label) => {
                 self.push_inline(Inline::FootnoteRef(label.into_string()));
             }
-            // HTML / math events arrive in M3; unhandled for now.
+            Event::InlineMath(latex) => {
+                self.push_inline(Inline::InlineMath(latex.into_string()));
+            }
+            Event::DisplayMath(latex) => {
+                // Block-level math — emit as a MathBlock in the document body.
+                // If we're inside a block container, the push_block routing
+                // sends it to the right parent.
+                self.push_block(Block::MathBlock {
+                    latex: latex.into_string(),
+                });
+            }
+            // HTML events arrive later; unhandled for now.
             _ => {}
         }
     }

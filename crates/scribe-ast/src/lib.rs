@@ -36,6 +36,10 @@ pub enum Block {
         rows: Vec<Vec<Vec<Inline>>>,
     },
     ThematicBreak,
+    /// Display-math equation (produced by `$$...$$` or `\[...\]`).
+    MathBlock {
+        latex: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +78,8 @@ pub enum Inline {
     /// Footnote reference — `[^label]`. The definition is looked up in
     /// [`Document::footnotes`] at emit time.
     FootnoteRef(String),
+    /// Inline math equation (`$...$` or `\(...\)`).
+    InlineMath(String),
     /// Hard line break (two trailing spaces or `\` at end of line).
     HardBreak,
     /// Soft line break rendered as a space.

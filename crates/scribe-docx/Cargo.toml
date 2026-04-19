@@ -7,8 +7,10 @@ license.workspace = true
 [dependencies]
 scribe-ast = { workspace = true }
 scribe-highlight = { workspace = true }
+scribe-math = { workspace = true }
 docx-rs = { workspace = true }
 anyhow = { workspace = true }
+zip = { workspace = true }
 
 [dev-dependencies]
 zip = { workspace = true }

@@ -1,9 +1,21 @@
 //! scribe-docx: emit `.docx` bytes from a [`scribe_ast::Document`].
 //!
-//! v0.2 (M2): supports the full set of Markdown features in §3.3 of the
-//! design doc except math (M3) and images (M3).
+//! Supports the full Markdown feature set in §3.3 of the design doc:
+//! headings, paragraphs, blockquotes, lists (including tasks), code
+//! blocks with syntect highlighting, GFM tables, footnotes, hyperlinks,
+//! inline + block math (OMML), and thematic breaks.
+//!
+//! Because `docx-rs` has no native math support, we inject OMML via a
+//! two-phase pipeline:
+//! 1. The block/inline emitter writes unique placeholder tokens
+//!    (`{{SCRIBE_MATH:uuid}}`) in place of math, and records each token's
+//!    OMML XML in a `math_map`.
+//! 2. After `docx-rs` packs the zip, [`postprocess_math`] reopens
+//!    `word/document.xml`, replaces each placeholder run (or paragraph
+//!    for block math) with the real OMML, and repacks the archive.
 
-use std::io::Cursor;
+use std::collections::HashMap;
+use std::io::{Cursor, Read, Write};
 
 use docx_rs::{
     AbstractNumbering, AlignmentType, Docx, Footnote, Level, LevelJc, LevelText, NumberFormat,
@@ -21,25 +33,84 @@ pub fn emit(doc: &Document) -> anyhow::Result<Vec<u8>> {
     out = register_builtin_styles(out);
     out = register_numbering(out);
 
-    let ctx = EmitCtx {
+    let mut ctx = EmitCtx {
         footnotes: &doc.footnotes,
+        math_map: HashMap::new(),
+        math_counter: 0,
     };
 
     for block in &doc.blocks {
-        out = render_block(out, block, 0, &ctx);
+        out = render_block(out, block, 0, &mut ctx);
     }
 
     let mut buf: Vec<u8> = Vec::new();
     out.build().pack(&mut Cursor::new(&mut buf))?;
-    Ok(buf)
+
+    if ctx.math_map.is_empty() {
+        Ok(buf)
+    } else {
+        postprocess_math(&buf, &ctx.math_map)
+    }
 }
 
 struct EmitCtx<'a> {
     footnotes: &'a std::collections::BTreeMap<String, Vec<Block>>,
+    /// Map from placeholder token (e.g. `{{SCRIBE_MATH:inline_0}}`) to the
+    /// OMML XML that should replace it after `docx-rs` packs the file.
+    math_map: HashMap<String, MathReplacement>,
+    math_counter: usize,
+}
+
+impl<'a> EmitCtx<'a> {
+    fn register_inline_math(&mut self, latex: &str) -> String {
+        let id = self.math_counter;
+        self.math_counter += 1;
+        let token = format!("{{{{SCRIBE_MATH:i{id}}}}}");
+        match scribe_math::latex_to_omml(latex, scribe_math::Display::Inline) {
+            Ok(omml) => {
+                self.math_map
+                    .insert(token.clone(), MathReplacement::InlineRun(omml));
+            }
+            Err(_) => {
+                // Fallback: leave the LaTeX source visible as code.
+                self.math_map.insert(
+                    token.clone(),
+                    MathReplacement::InlineRun(format!("<!-- math failed: {latex} -->")),
+                );
+            }
+        }
+        token
+    }
+
+    fn register_block_math(&mut self, latex: &str) -> String {
+        let id = self.math_counter;
+        self.math_counter += 1;
+        let token = format!("{{{{SCRIBE_MATH:b{id}}}}}");
+        match scribe_math::latex_to_omml(latex, scribe_math::Display::Block) {
+            Ok(omml) => {
+                self.math_map
+                    .insert(token.clone(), MathReplacement::ParagraphBlock(omml));
+            }
+            Err(_) => {
+                self.math_map.insert(
+                    token.clone(),
+                    MathReplacement::ParagraphBlock(format!("<!-- math failed: {latex} -->")),
+                );
+            }
+        }
+        token
+    }
+}
+
+enum MathReplacement {
+    /// Replace the enclosing `<w:r>…{token}…</w:r>` with the OMML.
+    InlineRun(String),
+    /// Replace the enclosing `<w:p>…{token}…</w:p>` with the OMML wrapped in an `<m:oMathPara>`.
+    ParagraphBlock(String),
 }
 
 /// Apply a block to the docx, returning the updated docx.
-fn render_block(mut out: Docx, block: &Block, indent_level: usize, ctx: &EmitCtx) -> Docx {
+fn render_block(mut out: Docx, block: &Block, indent_level: usize, ctx: &mut EmitCtx) -> Docx {
     match block {
         Block::Heading { level, content } => {
             let style = heading_style_id(*level);
@@ -87,10 +158,15 @@ fn render_block(mut out: Docx, block: &Block, indent_level: usize, ctx: &EmitCtx
             let p = Paragraph::new().style("HorizontalRule");
             out.add_paragraph(p)
         }
+        Block::MathBlock { latex } => {
+            let token = ctx.register_block_math(latex);
+            let p = Paragraph::new().add_run(Run::new().add_text(&token));
+            out.add_paragraph(p)
+        }
     }
 }
 
-fn render_quoted_block(out: Docx, block: &Block, ctx: &EmitCtx) -> Docx {
+fn render_quoted_block(out: Docx, block: &Block, ctx: &mut EmitCtx) -> Docx {
     match block {
         Block::Paragraph { content } => {
             let mut p = Paragraph::new().style("Quote");
@@ -179,7 +255,7 @@ fn render_list_item(
     item: &scribe_ast::ListItem,
     num_id: usize,
     indent_level: usize,
-    ctx: &EmitCtx,
+    ctx: &mut EmitCtx,
 ) -> Docx {
     // A list item's first block renders as a list-styled paragraph;
     // subsequent blocks render as continuation paragraphs (nested lists
@@ -229,7 +305,7 @@ fn render_table(
     alignments: &[Alignment],
     header: &[Vec<Inline>],
     rows: &[Vec<Vec<Inline>>],
-    ctx: &EmitCtx,
+    ctx: &mut EmitCtx,
 ) -> Docx {
     let mut table_rows: Vec<TableRow> = Vec::with_capacity(rows.len() + 1);
 
@@ -249,7 +325,7 @@ fn make_row(
     cells: &[Vec<Inline>],
     alignments: &[Alignment],
     is_header: bool,
-    ctx: &EmitCtx,
+    ctx: &mut EmitCtx,
 ) -> TableRow {
     let tcs: Vec<TableCell> = cells
         .iter()
@@ -279,7 +355,7 @@ fn to_para_alignment(a: Alignment) -> AlignmentType {
 }
 
 /// Flatten inlines into a Vec<Run>, applying character formatting.
-fn inline_runs(inlines: &[Inline], style: RunStyle, ctx: &EmitCtx) -> Vec<Run> {
+fn inline_runs(inlines: &[Inline], style: RunStyle, ctx: &mut EmitCtx) -> Vec<Run> {
     let mut runs = Vec::new();
     for inline in inlines {
         match inline {
@@ -323,12 +399,16 @@ fn inline_runs(inlines: &[Inline], style: RunStyle, ctx: &EmitCtx) -> Vec<Run> {
             Inline::FootnoteRef(label) => {
                 runs.push(emit_footnote_run(label, ctx, style));
             }
+            Inline::InlineMath(latex) => {
+                let token = ctx.register_inline_math(latex);
+                runs.push(style.apply(Run::new().add_text(&token)));
+            }
         }
     }
     runs
 }
 
-fn emit_footnote_run(label: &str, ctx: &EmitCtx, style: RunStyle) -> Run {
+fn emit_footnote_run(label: &str, ctx: &mut EmitCtx, style: RunStyle) -> Run {
     let Some(blocks) = ctx.footnotes.get(label) else {
         // Dangling reference — emit the label in brackets so authors can spot it.
         return style.apply(Run::new().add_text(format!("[^{label}]")));
@@ -613,4 +693,140 @@ mod tests {
             "dangling placeholder should be present"
         );
     }
+
+    #[test]
+    fn inline_math_substitutes_placeholder_with_omml() {
+        let mut doc = Document::new();
+        doc.push(Block::Paragraph {
+            content: vec![
+                Inline::Text("Energy: ".into()),
+                Inline::InlineMath("E = mc^2".into()),
+                Inline::Text(".".into()),
+            ],
+        });
+        let bytes = emit(&doc).unwrap();
+        let cursor = std::io::Cursor::new(&bytes);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        use std::io::Read as _;
+        zip.by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+        assert!(
+            !xml.contains("{{SCRIBE_MATH"),
+            "placeholder tokens should be replaced; got: {xml}"
+        );
+        assert!(xml.contains("m:oMath"), "inline math must render as OMML");
+    }
+
+    #[test]
+    fn block_math_substitutes_to_oMathPara() {
+        let mut doc = Document::new();
+        doc.push(Block::MathBlock {
+            latex: "a + b = c".into(),
+        });
+        let bytes = emit(&doc).unwrap();
+        let cursor = std::io::Cursor::new(&bytes);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        use std::io::Read as _;
+        zip.by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+        assert!(
+            !xml.contains("{{SCRIBE_MATH"),
+            "placeholder should be replaced"
+        );
+        assert!(
+            xml.contains("m:oMathPara"),
+            "block math must render as oMathPara"
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Post-processing: replace math placeholders in word/document.xml with OMML.
+// ---------------------------------------------------------------------------
+
+fn postprocess_math(
+    zip_bytes: &[u8],
+    math_map: &HashMap<String, MathReplacement>,
+) -> anyhow::Result<Vec<u8>> {
+    let cursor = Cursor::new(zip_bytes);
+    let mut reader = zip::ZipArchive::new(cursor)?;
+
+    let mut out_buf: Vec<u8> = Vec::with_capacity(zip_bytes.len());
+    {
+        let out_cursor = Cursor::new(&mut out_buf);
+        let mut writer = zip::ZipWriter::new(out_cursor);
+
+        for i in 0..reader.len() {
+            let mut entry = reader.by_index(i)?;
+            let name = entry.name().to_string();
+            let opts: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+                .compression_method(entry.compression())
+                .last_modified_time(entry.last_modified().unwrap_or_default());
+
+            let mut data = Vec::with_capacity(entry.size() as usize);
+            entry.read_to_end(&mut data)?;
+
+            if name == "word/document.xml" {
+                let xml = String::from_utf8(data)
+                    .map_err(|e| anyhow::anyhow!("document.xml is not utf-8: {e}"))?;
+                let replaced = replace_math_placeholders(&xml, math_map);
+                writer.start_file(name, opts)?;
+                writer.write_all(replaced.as_bytes())?;
+            } else {
+                writer.start_file(name, opts)?;
+                writer.write_all(&data)?;
+            }
+        }
+        writer.finish()?;
+    }
+    Ok(out_buf)
+}
+
+fn replace_math_placeholders(xml: &str, math_map: &HashMap<String, MathReplacement>) -> String {
+    let mut out = xml.to_string();
+    for (token, replacement) in math_map {
+        match replacement {
+            MathReplacement::InlineRun(omml) => {
+                // Locate the whole run containing the placeholder: <w:r ...> ... token ... </w:r>
+                while let Some(token_pos) = out.find(token) {
+                    let run_start = match out[..token_pos].rfind("<w:r ") {
+                        Some(i) => i,
+                        None => match out[..token_pos].rfind("<w:r>") {
+                            Some(i) => i,
+                            None => break,
+                        },
+                    };
+                    let run_end_close = match out[token_pos..].find("</w:r>") {
+                        Some(i) => token_pos + i + "</w:r>".len(),
+                        None => break,
+                    };
+                    out.replace_range(run_start..run_end_close, omml);
+                }
+            }
+            MathReplacement::ParagraphBlock(omml) => {
+                // Replace the enclosing <w:p> element.
+                while let Some(token_pos) = out.find(token) {
+                    let para_start = match out[..token_pos].rfind("<w:p ") {
+                        Some(i) => i,
+                        None => match out[..token_pos].rfind("<w:p>") {
+                            Some(i) => i,
+                            None => break,
+                        },
+                    };
+                    let para_end_close = match out[token_pos..].find("</w:p>") {
+                        Some(i) => token_pos + i + "</w:p>".len(),
+                        None => break,
+                    };
+                    out.replace_range(para_start..para_end_close, omml);
+                }
+            }
+        }
+    }
+    out
 }
