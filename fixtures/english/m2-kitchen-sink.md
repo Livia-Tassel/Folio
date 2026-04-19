@@ -47,8 +47,19 @@ fn main() {
 | Headings    |   ✅   | H1–H6                        |
 | Inlines     |   ✅   | bold, italic, code, link     |
 | Tables      |   ✅   | GFM with alignment           |
+| Footnotes   |   ✅   | native Word footnotes        |
 | Math        |   ⏳   | coming in M3                 |
 
 ---
+
+## Footnotes
+
+Scribe also supports footnotes[^fn-a] that appear at the bottom of the page.
+Multiple footnotes per document[^fn-b] are fine too.
+
+[^fn-a]: Footnotes are rendered as native Word footnotes, editable just like any
+    reference inserted through Word's own UI.
+
+[^fn-b]: Each footnote gets its own auto-assigned ID.
 
 End of sample.

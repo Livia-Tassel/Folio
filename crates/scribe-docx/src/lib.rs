@@ -6,9 +6,9 @@
 use std::io::Cursor;
 
 use docx_rs::{
-    AbstractNumbering, AlignmentType, Docx, Level, LevelJc, LevelText, NumberFormat, Numbering,
-    NumberingId, Paragraph, Run, RunFonts, Start, Style, StyleType, Table, TableAlignmentType,
-    TableCell, TableRow, WidthType,
+    AbstractNumbering, AlignmentType, Docx, Footnote, Level, LevelJc, LevelText, NumberFormat,
+    Numbering, NumberingId, Paragraph, Run, RunFonts, Start, Style, StyleType, Table,
+    TableAlignmentType, TableCell, TableRow, WidthType,
 };
 use scribe_ast::{Alignment, Block, Document, Inline};
 
@@ -21,8 +21,12 @@ pub fn emit(doc: &Document) -> anyhow::Result<Vec<u8>> {
     out = register_builtin_styles(out);
     out = register_numbering(out);
 
+    let ctx = EmitCtx {
+        footnotes: &doc.footnotes,
+    };
+
     for block in &doc.blocks {
-        out = render_block(out, block, 0);
+        out = render_block(out, block, 0, &ctx);
     }
 
     let mut buf: Vec<u8> = Vec::new();
@@ -30,31 +34,35 @@ pub fn emit(doc: &Document) -> anyhow::Result<Vec<u8>> {
     Ok(buf)
 }
 
+struct EmitCtx<'a> {
+    footnotes: &'a std::collections::BTreeMap<String, Vec<Block>>,
+}
+
 /// Apply a block to the docx, returning the updated docx.
-fn render_block(mut out: Docx, block: &Block, indent_level: usize) -> Docx {
+fn render_block(mut out: Docx, block: &Block, indent_level: usize, ctx: &EmitCtx) -> Docx {
     match block {
         Block::Heading { level, content } => {
             let style = heading_style_id(*level);
             let mut p = Paragraph::new().style(&style);
-            for run in inline_runs(content, RunStyle::default()) {
+            for run in inline_runs(content, RunStyle::default(), ctx) {
                 p = p.add_run(run);
             }
             out.add_paragraph(p)
         }
         Block::Paragraph { content } => {
             let mut p = Paragraph::new();
-            for run in inline_runs(content, RunStyle::default()) {
+            for run in inline_runs(content, RunStyle::default(), ctx) {
                 p = p.add_run(run);
             }
             out.add_paragraph(p)
         }
         Block::BlockQuote { blocks } => {
             for child in blocks {
-                out = render_quoted_block(out, child);
+                out = render_quoted_block(out, child, ctx);
             }
             out
         }
-        Block::CodeBlock { lang: _, code } => render_code_block(out, code),
+        Block::CodeBlock { lang, code } => render_code_block(out, code, lang),
         Block::List {
             ordered,
             start: _,
@@ -66,7 +74,7 @@ fn render_block(mut out: Docx, block: &Block, indent_level: usize) -> Docx {
                 ABSTRACT_NUM_UNORDERED
             };
             for item in items {
-                out = render_list_item(out, item, num_id, indent_level);
+                out = render_list_item(out, item, num_id, indent_level, ctx);
             }
             out
         }
@@ -74,7 +82,7 @@ fn render_block(mut out: Docx, block: &Block, indent_level: usize) -> Docx {
             alignments,
             header,
             rows,
-        } => render_table(out, alignments, header, rows),
+        } => render_table(out, alignments, header, rows, ctx),
         Block::ThematicBreak => {
             let p = Paragraph::new().style("HorizontalRule");
             out.add_paragraph(p)
@@ -82,32 +90,88 @@ fn render_block(mut out: Docx, block: &Block, indent_level: usize) -> Docx {
     }
 }
 
-fn render_quoted_block(out: Docx, block: &Block) -> Docx {
+fn render_quoted_block(out: Docx, block: &Block, ctx: &EmitCtx) -> Docx {
     match block {
         Block::Paragraph { content } => {
             let mut p = Paragraph::new().style("Quote");
-            for run in inline_runs(content, RunStyle::default()) {
+            for run in inline_runs(content, RunStyle::default(), ctx) {
                 p = p.add_run(run);
             }
             out.add_paragraph(p)
         }
-        other => render_block(out, other, 0),
+        other => render_block(out, other, 0, ctx),
     }
 }
 
-fn render_code_block(out: Docx, code: &str) -> Docx {
-    // v0: no syntax highlighting yet — one paragraph per line, Source Code Pro
-    // (or Consolas / Menlo fallback). M2-later: syntect styled runs.
+fn render_code_block(out: Docx, code: &str, lang: &str) -> Docx {
+    // Tokenize via syntect, group tokens by line, emit one paragraph per
+    // line with per-token styled runs.
+    let tokens = scribe_highlight::highlight(code, lang);
+
+    // Split tokens on newlines so each source line becomes one paragraph.
     let mut out = out;
-    for line in code.lines() {
-        let p = Paragraph::new().style("SourceCode").add_run(
-            Run::new()
-                .add_text(line)
-                .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas")),
-        );
+    let mut current_line_runs: Vec<Run> = Vec::new();
+
+    for token in tokens {
+        // A token's text may contain embedded newlines (syntect preserves them).
+        let mut segments = token.text.split('\n').peekable();
+        let mut first = true;
+        while let Some(segment) = segments.next() {
+            if !first {
+                // Flush the current line as a paragraph, then start fresh.
+                let p = paragraph_from_runs(std::mem::take(&mut current_line_runs));
+                out = out.add_paragraph(p);
+            }
+            first = false;
+            if !segment.is_empty() {
+                current_line_runs.push(token_to_run(&token, segment));
+            }
+            if segments.peek().is_none() {
+                break;
+            }
+        }
+    }
+
+    if !current_line_runs.is_empty() {
+        let p = paragraph_from_runs(std::mem::take(&mut current_line_runs));
         out = out.add_paragraph(p);
     }
+
     out
+}
+
+fn paragraph_from_runs(runs: Vec<Run>) -> Paragraph {
+    let mut p = Paragraph::new().style("SourceCode");
+    if runs.is_empty() {
+        // Empty source line: emit a placeholder space so the paragraph
+        // still renders with the monospace style.
+        p = p.add_run(
+            Run::new()
+                .add_text("")
+                .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas")),
+        );
+    } else {
+        for r in runs {
+            p = p.add_run(r);
+        }
+    }
+    p
+}
+
+fn token_to_run(token: &scribe_highlight::Token, text: &str) -> Run {
+    let mut run = Run::new()
+        .add_text(text)
+        .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas"));
+    if let Some(color) = &token.color {
+        run = run.color(color);
+    }
+    if token.bold {
+        run = run.bold();
+    }
+    if token.italic {
+        run = run.italic();
+    }
+    run
 }
 
 fn render_list_item(
@@ -115,6 +179,7 @@ fn render_list_item(
     item: &scribe_ast::ListItem,
     num_id: usize,
     indent_level: usize,
+    ctx: &EmitCtx,
 ) -> Docx {
     // A list item's first block renders as a list-styled paragraph;
     // subsequent blocks render as continuation paragraphs (nested lists
@@ -132,12 +197,12 @@ fn render_list_item(
                 if let Some(p_prefix) = prefix {
                     p = p.add_run(Run::new().add_text(p_prefix));
                 }
-                for run in inline_runs(content, RunStyle::default()) {
+                for run in inline_runs(content, RunStyle::default(), ctx) {
                     p = p.add_run(run);
                 }
                 out.add_paragraph(p)
             }
-            other => render_block(out, other, indent_level),
+            other => render_block(out, other, indent_level, ctx),
         };
     }
     for block in blocks {
@@ -149,11 +214,11 @@ fn render_list_item(
                     ABSTRACT_NUM_UNORDERED
                 };
                 for nested in items {
-                    out = render_list_item(out, nested, nested_num, indent_level + 1);
+                    out = render_list_item(out, nested, nested_num, indent_level + 1, ctx);
                 }
                 out
             }
-            other => render_block(out, other, indent_level),
+            other => render_block(out, other, indent_level, ctx),
         };
     }
     out
@@ -164,14 +229,15 @@ fn render_table(
     alignments: &[Alignment],
     header: &[Vec<Inline>],
     rows: &[Vec<Vec<Inline>>],
+    ctx: &EmitCtx,
 ) -> Docx {
     let mut table_rows: Vec<TableRow> = Vec::with_capacity(rows.len() + 1);
 
     if !header.is_empty() {
-        table_rows.push(make_row(header, alignments, true));
+        table_rows.push(make_row(header, alignments, true, ctx));
     }
     for row in rows {
-        table_rows.push(make_row(row, alignments, false));
+        table_rows.push(make_row(row, alignments, false, ctx));
     }
 
     let mut table = Table::new(table_rows).align(TableAlignmentType::Center);
@@ -179,7 +245,12 @@ fn render_table(
     out.add_table(table)
 }
 
-fn make_row(cells: &[Vec<Inline>], alignments: &[Alignment], is_header: bool) -> TableRow {
+fn make_row(
+    cells: &[Vec<Inline>],
+    alignments: &[Alignment],
+    is_header: bool,
+    ctx: &EmitCtx,
+) -> TableRow {
     let tcs: Vec<TableCell> = cells
         .iter()
         .enumerate()
@@ -189,7 +260,7 @@ fn make_row(cells: &[Vec<Inline>], alignments: &[Alignment], is_header: bool) ->
             if is_header {
                 para = para.style("TableHeader");
             }
-            for run in inline_runs(cell, RunStyle::default()) {
+            for run in inline_runs(cell, RunStyle::default(), ctx) {
                 para = para.add_run(run);
             }
             TableCell::new().add_paragraph(para)
@@ -208,7 +279,7 @@ fn to_para_alignment(a: Alignment) -> AlignmentType {
 }
 
 /// Flatten inlines into a Vec<Run>, applying character formatting.
-fn inline_runs(inlines: &[Inline], style: RunStyle) -> Vec<Run> {
+fn inline_runs(inlines: &[Inline], style: RunStyle, ctx: &EmitCtx) -> Vec<Run> {
     let mut runs = Vec::new();
     for inline in inlines {
         match inline {
@@ -225,17 +296,17 @@ fn inline_runs(inlines: &[Inline], style: RunStyle) -> Vec<Run> {
             Inline::Strong(inner) => {
                 let mut s = style;
                 s.bold = true;
-                runs.extend(inline_runs(inner, s));
+                runs.extend(inline_runs(inner, s, ctx));
             }
             Inline::Emphasis(inner) => {
                 let mut s = style;
                 s.italic = true;
-                runs.extend(inline_runs(inner, s));
+                runs.extend(inline_runs(inner, s, ctx));
             }
             Inline::Strikethrough(inner) => {
                 let mut s = style;
                 s.strike = true;
-                runs.extend(inline_runs(inner, s));
+                runs.extend(inline_runs(inner, s, ctx));
             }
             Inline::Link {
                 url: _,
@@ -247,11 +318,36 @@ fn inline_runs(inlines: &[Inline], style: RunStyle) -> Vec<Run> {
                 // document-level relationship registration).
                 let mut s = style;
                 s.link = true;
-                runs.extend(inline_runs(content, s));
+                runs.extend(inline_runs(content, s, ctx));
+            }
+            Inline::FootnoteRef(label) => {
+                runs.push(emit_footnote_run(label, ctx, style));
             }
         }
     }
     runs
+}
+
+fn emit_footnote_run(label: &str, ctx: &EmitCtx, style: RunStyle) -> Run {
+    let Some(blocks) = ctx.footnotes.get(label) else {
+        // Dangling reference — emit the label in brackets so authors can spot it.
+        return style.apply(Run::new().add_text(format!("[^{label}]")));
+    };
+
+    let mut footnote = Footnote::new();
+    for block in blocks {
+        if let Block::Paragraph { content } = block {
+            let mut para = Paragraph::new();
+            for run in inline_runs(content, RunStyle::default(), ctx) {
+                para = para.add_run(run);
+            }
+            footnote = footnote.add_content(para);
+        }
+        // Non-paragraph footnote content (lists, code) would need the
+        // block-level renderer; defer to M3 polish.
+    }
+
+    style.apply(Run::new().add_footnote_reference(footnote))
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -385,7 +481,11 @@ mod tests {
     use scribe_ast::Inline;
 
     fn doc_from(blocks: Vec<Block>) -> Document {
-        Document { blocks }
+        let mut d = Document::new();
+        for b in blocks {
+            d.push(b);
+        }
+        d
     }
 
     #[test]
@@ -467,5 +567,50 @@ mod tests {
             },
         ]);
         assert!(emit(&doc).is_ok());
+    }
+
+    #[test]
+    fn emits_footnote_reference() {
+        let mut doc = Document::new();
+        doc.push(Block::Paragraph {
+            content: vec![
+                Inline::Text("See ".into()),
+                Inline::FootnoteRef("1".into()),
+                Inline::Text(" for details.".into()),
+            ],
+        });
+        doc.add_footnote(
+            "1".into(),
+            vec![Block::Paragraph {
+                content: vec![Inline::Text("The footnote body.".into())],
+            }],
+        );
+        let bytes = emit(&doc).unwrap();
+        assert_eq!(&bytes[0..2], b"PK");
+    }
+
+    #[test]
+    fn dangling_footnote_ref_emits_bracket_placeholder() {
+        let mut doc = Document::new();
+        doc.push(Block::Paragraph {
+            content: vec![Inline::FootnoteRef("missing".into())],
+        });
+        // Definition intentionally not added.
+        let bytes = emit(&doc).unwrap();
+        assert_eq!(&bytes[0..2], b"PK");
+
+        // Unzip and confirm the placeholder text is present.
+        let cursor = std::io::Cursor::new(&bytes);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        use std::io::Read;
+        zip.by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+        assert!(
+            xml.contains("[^missing]"),
+            "dangling placeholder should be present"
+        );
     }
 }

@@ -71,6 +71,9 @@ pub enum Inline {
         title: String,
         content: Vec<Inline>,
     },
+    /// Footnote reference — `[^label]`. The definition is looked up in
+    /// [`Document::footnotes`] at emit time.
+    FootnoteRef(String),
     /// Hard line break (two trailing spaces or `\` at end of line).
     HardBreak,
     /// Soft line break rendered as a space.
@@ -80,6 +83,9 @@ pub enum Inline {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Document {
     pub blocks: Vec<Block>,
+    /// Footnote definitions, keyed by their Markdown label (without the `^`).
+    /// Populated during parsing; consumed during emission.
+    pub footnotes: std::collections::BTreeMap<String, Vec<Block>>,
 }
 
 impl Document {
@@ -89,6 +95,10 @@ impl Document {
 
     pub fn push(&mut self, block: Block) {
         self.blocks.push(block);
+    }
+
+    pub fn add_footnote(&mut self, label: String, blocks: Vec<Block>) {
+        self.footnotes.insert(label, blocks);
     }
 }
 

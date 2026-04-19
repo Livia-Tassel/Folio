@@ -79,6 +79,8 @@ enum Container {
     },
     /// Inline container (Strong/Emphasis/Strikethrough/Link).
     Inline(InlineKind),
+    /// Footnote definition — collects blocks until the matching End.
+    FootnoteDef(FootnoteDef),
 }
 
 enum InlineKind {
@@ -90,6 +92,13 @@ enum InlineKind {
         title: String,
         content: Vec<Inline>,
     },
+}
+
+/// A footnote definition's contents are accumulated separately from the
+/// main document body, then stashed into `Document::footnotes` on end.
+struct FootnoteDef {
+    label: String,
+    blocks: Vec<Block>,
 }
 
 impl Builder {
@@ -134,7 +143,10 @@ impl Builder {
                 }
             }
             Event::Rule => self.push_block(Block::ThematicBreak),
-            // Footnote / HTML / math events arrive in M2-later and M3; unhandled for now.
+            Event::FootnoteReference(label) => {
+                self.push_inline(Inline::FootnoteRef(label.into_string()));
+            }
+            // HTML / math events arrive in M3; unhandled for now.
             _ => {}
         }
     }
@@ -221,6 +233,12 @@ impl Builder {
                 self.stack.push(Container::TableCell {
                     inlines: Vec::new(),
                 });
+            }
+            Tag::FootnoteDefinition(label) => {
+                self.stack.push(Container::FootnoteDef(FootnoteDef {
+                    label: label.into_string(),
+                    blocks: Vec::new(),
+                }));
             }
             // Unhandled start tags are silently ignored — their matching End is also ignored.
             _ => {}
@@ -323,6 +341,9 @@ impl Builder {
                     content,
                 });
             }
+            (Container::FootnoteDef(fd), TagEnd::FootnoteDefinition) => {
+                self.doc.add_footnote(fd.label, fd.blocks);
+            }
             // Mismatched container/end: discard silently. A malformed event
             // stream from pulldown-cmark is not expected in practice.
             _ => {}
@@ -333,6 +354,9 @@ impl Builder {
         match self.stack.last_mut() {
             Some(Container::BlockQuote { blocks }) | Some(Container::ListItem { blocks, .. }) => {
                 blocks.push(block);
+            }
+            Some(Container::FootnoteDef(fd)) => {
+                fd.blocks.push(block);
             }
             _ => self.doc.push(block),
         }
@@ -531,5 +555,30 @@ mod tests {
     #[test]
     fn empty_input_yields_empty_document() {
         assert!(parse("").blocks.is_empty());
+    }
+
+    #[test]
+    fn parses_footnote() {
+        let md = "Body text[^1] continues.\n\n[^1]: The footnote body.";
+        let doc = parse(md);
+
+        // The first block should contain a FootnoteRef with label "1".
+        let Block::Paragraph { content } = &doc.blocks[0] else {
+            panic!("expected paragraph");
+        };
+        assert!(
+            content
+                .iter()
+                .any(|i| matches!(i, Inline::FootnoteRef(label) if label == "1")),
+            "paragraph should reference footnote 1; got {content:?}"
+        );
+
+        // The footnote map should contain the definition.
+        assert!(doc.footnotes.contains_key("1"));
+        let def = &doc.footnotes["1"];
+        let Block::Paragraph { content } = &def[0] else {
+            panic!("footnote definition should wrap a paragraph");
+        };
+        assert_eq!(content, &vec![Inline::Text("The footnote body.".into())]);
     }
 }
