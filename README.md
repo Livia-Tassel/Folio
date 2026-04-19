@@ -218,9 +218,11 @@ Longer-form planning and design material lives here:
 - [`docs/superpowers/specs/2026-04-17-scribe-md-to-docx-design.md`](docs/superpowers/specs/2026-04-17-scribe-md-to-docx-design.md)
 - [`docs/superpowers/plans/2026-04-17-scribe-v1-plan.md`](docs/superpowers/plans/2026-04-17-scribe-v1-plan.md)
 
-## Stars History
+## Repository Stats
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Livia-Tassel/Folio&type=Date)](https://www.star-history.com/#Livia-Tassel/Folio&Date)
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=Livia-Tassel&repo=Folio&theme=transparent&show_owner=true" alt="Folio repository stats" />
+</p>
 
 ## License
 

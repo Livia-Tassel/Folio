@@ -14,9 +14,6 @@
   <a href="README.zh-CN.md">简体中文</a>
 </p>
 
-> [!NOTE]
-> 英文版 README 是主版本；本文件为中文说明与对照。
-
 Folio 是一个跨平台桌面应用和 Rust 工作区，用于把 Markdown 转成结构正确、可继续编辑的 Microsoft Word 文档，而不是“能打开但还得再修一遍”的导出结果。它重点解决公式、图片、表格、层级样式等常见问题，让导出的文档在 Word 或 LibreOffice 中看起来更像最终成品。
 
 ## 为什么做 Folio
@@ -182,9 +179,11 @@ soffice --headless --convert-to pdf --outdir test/output test/output/folio-compr
 - [`docs/superpowers/specs/2026-04-17-scribe-md-to-docx-design.md`](docs/superpowers/specs/2026-04-17-scribe-md-to-docx-design.md)
 - [`docs/superpowers/plans/2026-04-17-scribe-v1-plan.md`](docs/superpowers/plans/2026-04-17-scribe-v1-plan.md)
 
-## Stars 历史
+## 仓库统计
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Livia-Tassel/Folio&type=Date)](https://www.star-history.com/#Livia-Tassel/Folio&Date)
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=Livia-Tassel&repo=Folio&theme=transparent&show_owner=true" alt="Folio 仓库统计" />
+</p>
 
 ## License
 
