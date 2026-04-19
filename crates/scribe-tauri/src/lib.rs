@@ -8,6 +8,8 @@ pub fn run() {
             commands::ping,
             commands::convert_file,
             commands::convert_string,
+            commands::preview_html,
+            commands::preview_standalone,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

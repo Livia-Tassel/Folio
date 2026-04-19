@@ -29,6 +29,19 @@ pub fn convert_string(markdown: String) -> Result<Vec<u8>, String> {
     scribe_core::convert_string(&markdown).map_err(|e| e.to_string())
 }
 
+/// Render a Markdown string as an HTML preview fragment (no <html> shell).
+#[tauri::command]
+pub fn preview_html(markdown: String) -> String {
+    scribe_core::preview_html(&markdown)
+}
+
+/// Render a full standalone HTML document with embedded CSS — useful when
+/// the frontend wants to drop the result straight into an iframe via srcdoc.
+#[tauri::command]
+pub fn preview_standalone(markdown: String) -> String {
+    scribe_core::preview_standalone(&markdown)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

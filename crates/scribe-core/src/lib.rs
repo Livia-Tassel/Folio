@@ -32,6 +32,18 @@ pub fn convert_file(input: impl AsRef<Path>, output: impl AsRef<Path>) -> Result
     Ok(())
 }
 
+/// Render a Markdown string into an HTML preview fragment for the live-preview pane.
+pub fn preview_html(markdown: &str) -> String {
+    let doc = scribe_parser::parse(markdown);
+    scribe_preview::render(&doc)
+}
+
+/// Render a Markdown string into a complete standalone HTML document.
+pub fn preview_standalone(markdown: &str) -> String {
+    let doc = scribe_parser::parse(markdown);
+    scribe_preview::render_standalone(&doc)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -7,6 +7,7 @@ license.workspace = true
 [dependencies]
 scribe-parser = { workspace = true }
 scribe-docx = { workspace = true }
+scribe-preview = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 
