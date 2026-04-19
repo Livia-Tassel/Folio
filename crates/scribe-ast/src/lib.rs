@@ -1,4 +1,4 @@
-//! scribe-ast: typed Markdown AST used by all Scribe stages.
+//! scribe-ast: typed Markdown AST used by all Folio stages.
 //!
 //! The AST has two layers: [`Block`] (document-level nodes like headings,
 //! paragraphs, lists, tables) and [`Inline`] (text runs, emphasis, links,

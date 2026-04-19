@@ -3,7 +3,7 @@ name = "scribe-tauri"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Scribe desktop application — Markdown → .docx"
+description = "Folio desktop application — Markdown → .docx"
 
 [lib]
 name = "scribe_tauri_lib"

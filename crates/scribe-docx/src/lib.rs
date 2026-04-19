@@ -19,14 +19,16 @@ use std::collections::HashMap;
 use std::io::{Cursor, Read, Write};
 
 use docx_rs::{
-    AbstractNumbering, AlignmentType, Docx, Footnote, Level, LevelJc, LevelText, NumberFormat,
-    Numbering, NumberingId, Paragraph, Run, RunFonts, Start, Style, StyleType, Table,
-    TableAlignmentType, TableCell, TableRow, WidthType,
+    AbstractNumbering, AlignmentType, Docx, Footnote, Level, LevelJc, LevelOverride, LevelText,
+    NumberFormat, Numbering, NumberingId, Paragraph, ParagraphBorder, ParagraphBorderPosition,
+    ParagraphBorders, ParagraphProperty, Run, RunFonts, RunProperty, Shading, Start, Style,
+    StyleType, Table, TableAlignmentType, TableCell, TableRow, WidthType,
 };
 use scribe_ast::{Alignment, Block, Document, Inline};
 
-const ABSTRACT_NUM_UNORDERED: usize = 1;
-const ABSTRACT_NUM_ORDERED: usize = 2;
+const ABSTRACT_NUM_UNORDERED: usize = 101;
+const ABSTRACT_NUM_ORDERED: usize = 102;
+const FIRST_LIST_NUM_ID: usize = 1_001;
 
 /// Convert a [`Document`] into `.docx` bytes.
 pub fn emit(doc: &Document) -> anyhow::Result<Vec<u8>> {
@@ -46,6 +48,7 @@ pub fn emit_with_base(
         footnotes: &doc.footnotes,
         math_map: HashMap::new(),
         math_counter: 0,
+        next_list_num_id: FIRST_LIST_NUM_ID,
         base_dir,
     };
 
@@ -69,6 +72,7 @@ struct EmitCtx<'a> {
     /// OMML XML that should replace it after `docx-rs` packs the file.
     math_map: HashMap<String, MathReplacement>,
     math_counter: usize,
+    next_list_num_id: usize,
     /// Optional base path used to resolve relative image URLs.
     base_dir: Option<std::path::PathBuf>,
 }
@@ -148,14 +152,11 @@ fn render_block(mut out: Docx, block: &Block, indent_level: usize, ctx: &mut Emi
         Block::CodeBlock { lang, code } => render_code_block(out, code, lang),
         Block::List {
             ordered,
-            start: _,
+            start,
             items,
         } => {
-            let num_id = if *ordered {
-                ABSTRACT_NUM_ORDERED
-            } else {
-                ABSTRACT_NUM_UNORDERED
-            };
+            let (mut out, num_id) =
+                allocate_list_numbering(out, *ordered, *start, indent_level, ctx);
             for item in items {
                 out = render_list_item(out, item, num_id, indent_level, ctx);
             }
@@ -522,17 +523,109 @@ fn heading_style_id(level: u8) -> String {
 }
 
 fn register_builtin_styles(mut out: Docx) -> Docx {
-    // Quote — indented italic.
-    out = out.add_style(Style::new("Quote", StyleType::Paragraph).name("Quote"));
-    // SourceCode — code block paragraph style.
-    out = out.add_style(Style::new("SourceCode", StyleType::Paragraph).name("Source Code"));
-    // InlineCode — character style applied via Run::style().
-    out = out.add_style(Style::new("InlineCode", StyleType::Character).name("Inline Code"));
-    // TableHeader — header row paragraph style.
-    out = out.add_style(Style::new("TableHeader", StyleType::Paragraph).name("Table Header"));
-    // HorizontalRule — paragraph style used for thematic breaks.
-    out = out.add_style(Style::new("HorizontalRule", StyleType::Paragraph).name("Horizontal Rule"));
+    for level in 1..=6 {
+        out = out.add_style(heading_style(level));
+    }
+    out = out.add_style(quote_style());
+    out = out.add_style(source_code_style());
+    out = out.add_style(inline_code_style());
+    out = out.add_style(table_header_style());
+    out = out.add_style(horizontal_rule_style());
     out
+}
+
+fn heading_style(level: u8) -> Style {
+    let (size, color) = match level {
+        1 => (32, "111827"),
+        2 => (28, "111827"),
+        3 => (24, "1F2937"),
+        4 => (22, "374151"),
+        5 => (20, "4B5563"),
+        _ => (18, "4B5563"),
+    };
+
+    let mut style = Style::new(heading_style_id(level), StyleType::Paragraph)
+        .name(format!("Heading {level}"))
+        .based_on("Normal")
+        .next("Normal")
+        .ui_priority(level as usize)
+        .unhide_when_used();
+    style.run_property = RunProperty::new().bold().size(size).color(color);
+    style.paragraph_property = ParagraphProperty::new().outline_lvl((level - 1) as usize);
+    style
+}
+
+fn quote_style() -> Style {
+    let mut style = Style::new("Quote", StyleType::Paragraph)
+        .name("Quote")
+        .based_on("Normal")
+        .next("Normal")
+        .unhide_when_used();
+    style.run_property = RunProperty::new().italic().color("4B5563");
+    style.paragraph_property = ParagraphProperty::new()
+        .indent(Some(420), None, None, None)
+        .set_borders(
+            ParagraphBorders::with_empty().set(
+                ParagraphBorder::new(ParagraphBorderPosition::Left)
+                    .size(8)
+                    .color("CBD5E1"),
+            ),
+        );
+    style
+}
+
+fn source_code_style() -> Style {
+    let mut style = Style::new("SourceCode", StyleType::Paragraph)
+        .name("Source Code")
+        .based_on("Normal")
+        .next("SourceCode")
+        .unhide_when_used();
+    style.run_property = RunProperty::new()
+        .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas"))
+        .size(21)
+        .color("111827");
+    style.paragraph_property = ParagraphProperty::new()
+        .indent(Some(240), None, None, None)
+        .shading(Shading::new().fill("F6F8FA"));
+    style
+}
+
+fn inline_code_style() -> Style {
+    let mut style = Style::new("InlineCode", StyleType::Character)
+        .name("Inline Code")
+        .unhide_when_used();
+    style.run_property = RunProperty::new()
+        .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas"))
+        .size(21)
+        .color("111827")
+        .shading(Shading::new().fill("F3F4F6"));
+    style
+}
+
+fn table_header_style() -> Style {
+    let mut style = Style::new("TableHeader", StyleType::Paragraph)
+        .name("Table Header")
+        .based_on("Normal")
+        .next("Normal")
+        .unhide_when_used();
+    style.run_property = RunProperty::new().bold().color("111827");
+    style
+}
+
+fn horizontal_rule_style() -> Style {
+    let mut style = Style::new("HorizontalRule", StyleType::Paragraph)
+        .name("Horizontal Rule")
+        .based_on("Normal")
+        .next("Normal")
+        .unhide_when_used();
+    style.paragraph_property = ParagraphProperty::new().set_borders(
+        ParagraphBorders::with_empty().set(
+            ParagraphBorder::new(ParagraphBorderPosition::Top)
+                .size(8)
+                .color("D1D5DB"),
+        ),
+    );
+    style
 }
 
 fn register_numbering(out: Docx) -> Docx {
@@ -602,11 +695,31 @@ fn register_numbering(out: Docx) -> Docx {
 
     out.add_abstract_numbering(bullet_abstract)
         .add_abstract_numbering(decimal_abstract)
-        .add_numbering(Numbering::new(
-            ABSTRACT_NUM_UNORDERED,
-            ABSTRACT_NUM_UNORDERED,
-        ))
-        .add_numbering(Numbering::new(ABSTRACT_NUM_ORDERED, ABSTRACT_NUM_ORDERED))
+}
+
+fn allocate_list_numbering(
+    out: Docx,
+    ordered: bool,
+    start: u64,
+    indent_level: usize,
+    ctx: &mut EmitCtx,
+) -> (Docx, usize) {
+    let num_id = ctx.next_list_num_id;
+    ctx.next_list_num_id += 1;
+
+    let abstract_num_id = if ordered {
+        ABSTRACT_NUM_ORDERED
+    } else {
+        ABSTRACT_NUM_UNORDERED
+    };
+
+    let mut numbering = Numbering::new(num_id, abstract_num_id);
+    if ordered && start > 1 {
+        numbering =
+            numbering.add_override(LevelOverride::new(indent_level.min(8)).start(start as usize));
+    }
+
+    (out.add_numbering(numbering), num_id)
 }
 
 #[cfg(test)]
@@ -797,6 +910,61 @@ mod tests {
             xml.contains("m:oMathPara"),
             "block math must render as oMathPara"
         );
+    }
+
+    #[test]
+    fn registers_visible_heading_styles() {
+        let doc = doc_from(vec![Block::Heading {
+            level: 1,
+            content: vec![Inline::Text("Heading".into())],
+        }]);
+        let bytes = emit(&doc).unwrap();
+        let cursor = std::io::Cursor::new(&bytes);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        use std::io::Read as _;
+        zip.by_name("word/styles.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+
+        assert!(xml.contains(r#"w:styleId="Heading1""#));
+        assert!(xml.contains(r#"w:name w:val="Heading 1""#));
+        assert!(xml.contains(r#"w:outlineLvl w:val="0""#));
+    }
+
+    #[test]
+    fn ordered_lists_preserve_start_value() {
+        let doc = doc_from(vec![Block::List {
+            ordered: true,
+            start: 3,
+            items: vec![
+                scribe_ast::ListItem {
+                    task: None,
+                    blocks: vec![Block::Paragraph {
+                        content: vec![Inline::Text("three".into())],
+                    }],
+                },
+                scribe_ast::ListItem {
+                    task: None,
+                    blocks: vec![Block::Paragraph {
+                        content: vec![Inline::Text("four".into())],
+                    }],
+                },
+            ],
+        }]);
+        let bytes = emit(&doc).unwrap();
+        let cursor = std::io::Cursor::new(&bytes);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        use std::io::Read as _;
+        zip.by_name("word/numbering.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+
+        assert!(xml.contains(r#"w:startOverride w:val="3""#));
+        assert!(xml.contains(r#"w:numId="1001""#));
     }
 }
 

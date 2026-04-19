@@ -1,4 +1,4 @@
-//! Unified error type for Scribe's conversion pipeline.
+//! Unified error type for Folio's conversion pipeline.
 
 use std::io;
 

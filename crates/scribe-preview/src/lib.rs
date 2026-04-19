@@ -42,7 +42,7 @@ pub fn render_standalone(doc: &Document) -> String {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Scribe Preview</title>
+<title>Folio Preview</title>
 <style>
 {css}
 </style>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
 
-  const SAMPLE = `# Scribe
+  const SAMPLE = `# Folio
 
 Drop or type Markdown on the left — see the preview on the right.
 
@@ -23,7 +23,7 @@ $$\\int_0^1 x^2 \\, dx = \\frac{1}{3}$$
 
 \`\`\`rust
 fn main() {
-    println!("Hello, Scribe!");
+    println!("Hello, Folio!");
 }
 \`\`\`
 `;
@@ -61,7 +61,7 @@ fn main() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "scribe.docx";
+      a.download = "folio.docx";
       a.click();
       URL.revokeObjectURL(url);
       error = null;
@@ -78,7 +78,7 @@ fn main() {
     class="flex items-center justify-between border-b border-neutral-200 bg-white/80 px-4 py-2 backdrop-blur"
   >
     <div class="flex items-center gap-2">
-      <span class="text-lg font-semibold tracking-tight">Scribe</span>
+      <span class="text-lg font-semibold tracking-tight">Folio</span>
       <span class="text-xs text-neutral-500">Markdown → Word</span>
     </div>
     <button
@@ -197,4 +197,3 @@ fn main() {
     margin: 2em 0;
   }
 </style>
-

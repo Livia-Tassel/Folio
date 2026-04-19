@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Scribe",
+  "productName": "Folio",
   "version": "0.1.0",
-  "identifier": "com.scribe.app",
+  "identifier": "com.folio.app",
   "build": {
     "frontendDist": "./frontend/build",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "Scribe",
+        "title": "Folio",
         "width": 1200,
         "height": 800,
         "minWidth": 800,

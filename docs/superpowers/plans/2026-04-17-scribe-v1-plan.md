@@ -1,8 +1,8 @@
-# Scribe v1 Implementation Plan
+# Folio v1 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship Scribe v1 — a signed, cross-platform (macOS .dmg + Windows .msi) desktop app that converts Markdown to `.docx` with zero post-conversion cleanup, including LaTeX math as native OMML, image sizing, cross-references, and Chinese academic templates.
+**Goal:** Ship Folio v1 — a signed, cross-platform (macOS .dmg + Windows .msi) desktop app that converts Markdown to `.docx` with zero post-conversion cleanup, including LaTeX math as native OMML, image sizing, cross-references, and Chinese academic templates.
 
 **Architecture:** Tauri 2 shell (Rust backend + Svelte frontend). Rust workspace with 9 focused crates handling parsing, math, images, syntax highlighting, templates, DOCX emission, preview, orchestration, and the Tauri shell. Pipeline: MD → AST → pre-processors → DOCX. Pure Rust end-to-end (no sidecars) to avoid macOS notarization issues.
 
@@ -292,7 +292,7 @@ license.workspace = true
 Each `src/lib.rs` is:
 
 ```rust
-//! scribe-ast: typed Markdown AST for Scribe.
+//! scribe-ast: typed Markdown AST for Folio.
 
 #[cfg(test)]
 mod tests {
@@ -389,7 +389,7 @@ custom-protocol = ["tauri/custom-protocol"]
 ```json
 {
   "$schema": "../../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "Scribe",
+  "productName": "Folio",
   "version": "0.1.0",
   "identifier": "com.scribe.app",
   "build": {
@@ -401,7 +401,7 @@ custom-protocol = ["tauri/custom-protocol"]
   "app": {
     "windows": [
       {
-        "title": "Scribe",
+        "title": "Folio",
         "width": 1200,
         "height": 800,
         "minWidth": 800,
@@ -854,7 +854,7 @@ Each task: write fixture → write failing test → implement → pass → commi
 ### M5 task list
 
 - [ ] **M5-1:** Settings UI — default template, default output dir, recent files, theme.
-- [ ] **M5-2:** Persist settings/recents to `~/Library/Application Support/Scribe` / `%APPDATA%\Scribe`.
+- [ ] **M5-2:** Persist settings/recents to `~/Library/Application Support/Folio` / `%APPDATA%\Folio`.
 - [ ] **M5-3:** Drag-drop polish: multi-file, folder, visual drop states.
 - [ ] **M5-4:** Toast + error UX for unsupported LaTeX macros, missing images.
 - [ ] **M5-5:** "Open in Word" / "Reveal in Finder/Explorer" buttons post-convert.

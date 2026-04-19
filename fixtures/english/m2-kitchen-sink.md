@@ -1,11 +1,11 @@
-# Scribe M2 Kitchen Sink
+# Folio M2 Kitchen Sink
 
 A comprehensive sample covering the full M2 feature set.
 
 ## Inline formatting
 
 Here is **bold** and *italic* and ~~strikethrough~~ and `inline code`. You can
-also [link to Scribe's repo](https://example.com "tooltip").
+also [link to Folio's repo](https://example.com "tooltip").
 
 ## Lists
 
@@ -54,7 +54,7 @@ fn main() {
 
 ## Footnotes
 
-Scribe also supports footnotes[^fn-a] that appear at the bottom of the page.
+Folio also supports footnotes[^fn-a] that appear at the bottom of the page.
 Multiple footnotes per document[^fn-b] are fine too.
 
 [^fn-a]: Footnotes are rendered as native Word footnotes, editable just like any

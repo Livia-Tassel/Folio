@@ -57,6 +57,10 @@ enum Container {
     ListItem {
         task: Option<bool>,
         blocks: Vec<Block>,
+        /// Tight list items may emit inline events directly under `Item`
+        /// without an intermediate paragraph container. Buffer them here
+        /// and flush to an implicit paragraph when needed.
+        tight_inlines: Vec<Inline>,
     },
     CodeBlock {
         lang: String,
@@ -212,6 +216,7 @@ impl Builder {
                 self.stack.push(Container::ListItem {
                     task: None,
                     blocks: Vec::new(),
+                    tight_inlines: Vec::new(),
                 });
             }
             Tag::Emphasis => {
@@ -309,7 +314,19 @@ impl Builder {
                     items,
                 });
             }
-            (Container::ListItem { task, blocks }, TagEnd::Item) => {
+            (
+                Container::ListItem {
+                    task,
+                    mut blocks,
+                    tight_inlines,
+                },
+                TagEnd::Item,
+            ) => {
+                if !tight_inlines.is_empty() {
+                    blocks.push(Block::Paragraph {
+                        content: tight_inlines,
+                    });
+                }
                 // The ListItem belongs to the enclosing List.
                 if let Some(Container::List { items, .. }) = self.stack.last_mut() {
                     items.push(ListItem { task, blocks });
@@ -385,7 +402,19 @@ impl Builder {
 
     fn push_block(&mut self, block: Block) {
         match self.stack.last_mut() {
-            Some(Container::BlockQuote { blocks }) | Some(Container::ListItem { blocks, .. }) => {
+            Some(Container::BlockQuote { blocks }) => {
+                blocks.push(block);
+            }
+            Some(Container::ListItem {
+                blocks,
+                tight_inlines,
+                ..
+            }) => {
+                if !tight_inlines.is_empty() {
+                    blocks.push(Block::Paragraph {
+                        content: std::mem::take(tight_inlines),
+                    });
+                }
                 blocks.push(block);
             }
             Some(Container::FootnoteDef(fd)) => {
@@ -398,6 +427,8 @@ impl Builder {
     fn push_inline(&mut self, inline: Inline) {
         if let Some(target) = current_inline_vec(&mut self.stack) {
             target.push(inline);
+        } else if let Some(Container::ListItem { tight_inlines, .. }) = self.stack.last_mut() {
+            tight_inlines.push(inline);
         }
     }
 
@@ -511,7 +542,7 @@ mod tests {
 
     #[test]
     fn parses_link() {
-        let doc = parse("[Scribe](https://example.com \"tooltip\")");
+        let doc = parse("[Folio](https://example.com \"tooltip\")");
         let Block::Paragraph { content } = &doc.blocks[0] else {
             panic!();
         };
@@ -525,7 +556,7 @@ mod tests {
         };
         assert_eq!(url, "https://example.com");
         assert_eq!(title, "tooltip");
-        assert_eq!(c, &vec![text("Scribe")]);
+        assert_eq!(c, &vec![text("Folio")]);
     }
 
     #[test]
@@ -536,6 +567,12 @@ mod tests {
         };
         assert!(!ordered);
         assert_eq!(items.len(), 3);
+        assert_eq!(
+            items[0].blocks,
+            vec![Block::Paragraph {
+                content: vec![text("one")],
+            }]
+        );
     }
 
     #[test]
@@ -552,6 +589,12 @@ mod tests {
         assert!(ordered);
         assert_eq!(*start, 3);
         assert_eq!(items.len(), 2);
+        assert_eq!(
+            items[0].blocks,
+            vec![Block::Paragraph {
+                content: vec![text("three")],
+            }]
+        );
     }
 
     #[test]
@@ -562,6 +605,12 @@ mod tests {
         };
         assert_eq!(items[0].task, Some(false));
         assert_eq!(items[1].task, Some(true));
+        assert_eq!(
+            items[0].blocks,
+            vec![Block::Paragraph {
+                content: vec![text("todo")],
+            }]
+        );
     }
 
     #[test]

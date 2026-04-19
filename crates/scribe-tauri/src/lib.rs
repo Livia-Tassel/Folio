@@ -1,4 +1,4 @@
-//! Scribe desktop app — library entry. `main.rs` is the thin binary shim.
+//! Folio desktop app — library entry. `main.rs` is the thin binary shim.
 
 pub mod commands;
 

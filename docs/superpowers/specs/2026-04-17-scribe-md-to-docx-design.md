@@ -1,4 +1,4 @@
-# Scribe — Markdown → DOCX Converter (Design Spec)
+# Folio — Markdown → DOCX Converter (Design Spec)
 
 **Date:** 2026-04-17
 **Status:** Draft v1
@@ -9,11 +9,11 @@
 
 ## 1. Product Summary
 
-**Scribe** is a desktop application that converts Markdown (`.md`) files into Microsoft Word documents (`.docx`) **without requiring manual cleanup** of formatting afterward.
+**Folio** is a desktop application that converts Markdown (`.md`) files into Microsoft Word documents (`.docx`) **without requiring manual cleanup** of formatting afterward.
 
 The core promise: *paste or drop a Markdown file, get a .docx that opens in Word looking correct on the first try.*
 
-Where existing tools (Pandoc, Typora export, Marked 2, mdbook) require after-the-fact fixes — especially for math formulas, image sizing, table layout, and Chinese academic conventions — Scribe produces output that is ready to submit, print, or share.
+Where existing tools (Pandoc, Typora export, Marked 2, mdbook) require after-the-fact fixes — especially for math formulas, image sizing, table layout, and Chinese academic conventions — Folio produces output that is ready to submit, print, or share.
 
 ---
 
@@ -278,7 +278,7 @@ Per-template CSS file approximates page margins, fonts, heading sizes, table sty
 
 ### 5.10 Configuration & Persistence
 
-- `~/Library/Application Support/Scribe/` (macOS) / `%APPDATA%\Scribe\` (Windows)
+- `~/Library/Application Support/Folio/` (macOS) / `%APPDATA%\Folio\` (Windows)
 - `settings.json`: last-used template, window size, UI preferences.
 - `templates/`: user-imported `reference.docx` files.
 - `recent.json`: recent file list.

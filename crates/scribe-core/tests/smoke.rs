@@ -60,3 +60,24 @@ fn all_heading_levels_get_their_style() {
         );
     }
 }
+
+#[test]
+fn tight_list_items_survive_full_pipeline() {
+    let md = "- apples\n- bananas\n- cherries";
+    let bytes = scribe_core::convert_string(md).expect("convert_string should succeed");
+
+    let cursor = std::io::Cursor::new(&bytes);
+    let mut zip = zip::ZipArchive::new(cursor).expect("valid zip");
+    let mut xml = String::new();
+    zip.by_name("word/document.xml")
+        .expect("document.xml should be present")
+        .read_to_string(&mut xml)
+        .expect("document.xml should be UTF-8");
+
+    for item in ["apples", "bananas", "cherries"] {
+        assert!(
+            xml.contains(item),
+            "tight list item text missing in document.xml: {item}"
+        );
+    }
+}

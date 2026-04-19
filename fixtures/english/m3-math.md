@@ -1,6 +1,6 @@
 # Math Fidelity Demo
 
-Scribe renders LaTeX math as native, editable Word equations — not images.
+Folio renders LaTeX math as native, editable Word equations — not images.
 
 ## Inline math
 
