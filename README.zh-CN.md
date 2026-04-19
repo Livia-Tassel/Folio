@@ -32,9 +32,26 @@ Folio 的目标就是把这些问题尽量前移到转换流程里解决。
 
 ## 示例导出
 
-下面这个示例来自综合回归样例 [`test/folio-comprehensive.md`](test/folio-comprehensive.md)，导出文件为 [`test/output/folio-comprehensive.docx`](test/output/folio-comprehensive.docx)，截图来自对应 PDF 的渲染结果。
+下面这组三联示例来自综合回归样例 [`test/folio-comprehensive.md`](test/folio-comprehensive.md)，导出文件为 [`test/output/folio-comprehensive.docx`](test/output/folio-comprehensive.docx)，截图来自对应 PDF 的渲染结果。
 
-![Folio 示例导出](docs/images/demo-sample-export.png)
+<table>
+  <tr>
+    <td width="33.33%" valign="top">
+      <img src="docs/images/demo-sample-1.png" alt="Folio 示例第 1 页" width="100%" />
+    </td>
+    <td width="33.33%" valign="top">
+      <img src="docs/images/demo-sample-2.png" alt="Folio 示例第 2 页" width="100%" />
+    </td>
+    <td width="33.33%" valign="top">
+      <img src="docs/images/demo-sample-3.png" alt="Folio 示例第 3 页" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>第 1 页</strong><br/>格式、列表、代码块与表格</td>
+    <td align="center"><strong>第 2 页</strong><br/>公式与位图 Logo 嵌入</td>
+    <td align="center"><strong>第 3 页</strong><br/>SVG 资源与脚注</td>
+  </tr>
+</table>
 
 <p align="center">
   <a href="test/output/folio-comprehensive.docx">下载 DOCX</a>

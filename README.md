@@ -51,9 +51,26 @@ Folio is built to close that gap with a pure Rust pipeline and a desktop UX arou
 
 ## Sample Export
 
-The sample below is generated from the comprehensive regression fixture in [`test/folio-comprehensive.md`](test/folio-comprehensive.md), exported to [`test/output/folio-comprehensive.docx`](test/output/folio-comprehensive.docx), and rendered from the corresponding PDF.
+The samples below are generated from the comprehensive regression fixture in [`test/folio-comprehensive.md`](test/folio-comprehensive.md), exported to [`test/output/folio-comprehensive.docx`](test/output/folio-comprehensive.docx), and rendered from the corresponding PDF.
 
-![Folio sample export](docs/images/demo-sample-export.png)
+<table>
+  <tr>
+    <td width="33.33%" valign="top">
+      <img src="docs/images/demo-sample-1.png" alt="Folio sample page 1" width="100%" />
+    </td>
+    <td width="33.33%" valign="top">
+      <img src="docs/images/demo-sample-2.png" alt="Folio sample page 2" width="100%" />
+    </td>
+    <td width="33.33%" valign="top">
+      <img src="docs/images/demo-sample-3.png" alt="Folio sample page 3" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Page 1</strong><br/>Formatting, lists, code, and tables</td>
+    <td align="center"><strong>Page 2</strong><br/>Math and raster logo embedding</td>
+    <td align="center"><strong>Page 3</strong><br/>SVG assets and footnotes</td>
+  </tr>
+</table>
 
 <p align="center">
   <a href="test/output/folio-comprehensive.docx">Download DOCX</a>
