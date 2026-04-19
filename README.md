@@ -56,13 +56,13 @@ The samples below are generated from the comprehensive regression fixture in [`t
 <table>
   <tr>
     <td width="33.33%" valign="top">
-      <img src="docs/images/demo-sample-1.png" alt="Folio sample page 1" width="100%" />
+      <img src="test/output/sample-o.png" alt="Folio sample page 1" width="100%" />
     </td>
     <td width="33.33%" valign="top">
-      <img src="docs/images/demo-sample-2.png" alt="Folio sample page 2" width="100%" />
+      <img src="test/output/sample-r.png" alt="Folio sample page 2" width="100%" />
     </td>
     <td width="33.33%" valign="top">
-      <img src="docs/images/demo-sample-3.png" alt="Folio sample page 3" width="100%" />
+      <img src="test/output/sample-t.png" alt="Folio sample page 3" width="100%" />
     </td>
   </tr>
   <tr>

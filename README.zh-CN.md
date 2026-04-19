@@ -37,13 +37,13 @@ Folio 的目标就是把这些问题尽量前移到转换流程里解决。
 <table>
   <tr>
     <td width="33.33%" valign="top">
-      <img src="docs/images/demo-sample-1.png" alt="Folio 示例第 1 页" width="100%" />
+      <img src="test/output/sample-o.png" alt="Folio 示例第 1 页" width="100%" />
     </td>
     <td width="33.33%" valign="top">
-      <img src="docs/images/demo-sample-2.png" alt="Folio 示例第 2 页" width="100%" />
+      <img src="test/output/sample-r.png" alt="Folio 示例第 2 页" width="100%" />
     </td>
     <td width="33.33%" valign="top">
-      <img src="docs/images/demo-sample-3.png" alt="Folio 示例第 3 页" width="100%" />
+      <img src="test/output/sample-t.png" alt="Folio 示例第 3 页" width="100%" />
     </td>
   </tr>
   <tr>
