@@ -115,9 +115,10 @@ mod tests {
     }
 
     #[test]
-    fn invalid_latex_returns_error() {
-        assert!(latex_to_mathml(r"\unknowncommand{foo}", Display::Inline).is_err() || true);
-        // latex2mathml is lenient; we don't require failure here, just don't panic.
+    fn invalid_latex_does_not_panic() {
+        // latex2mathml is lenient — we don't require Err here, just that
+        // the call returns without panicking. Both Ok and Err are fine.
+        let _ = latex_to_mathml(r"\unknowncommand{foo}", Display::Inline);
     }
 
     #[test]

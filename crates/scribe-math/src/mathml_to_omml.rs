@@ -663,21 +663,21 @@ mod tests {
     }
 
     #[test]
-    fn msup_emits_sSup() {
+    fn msup_emits_s_sup() {
         let omml = transform(&mathml("<msup><mi>E</mi><mn>2</mn></msup>")).unwrap();
         assert!(omml.contains("<m:sSup>"));
         assert!(omml.contains("<m:sup>"));
     }
 
     #[test]
-    fn msub_emits_sSub() {
+    fn msub_emits_s_sub() {
         let omml = transform(&mathml("<msub><mi>x</mi><mn>0</mn></msub>")).unwrap();
         assert!(omml.contains("<m:sSub>"));
         assert!(omml.contains("<m:sub>"));
     }
 
     #[test]
-    fn block_emits_oMathPara() {
+    fn block_emits_o_math_para() {
         let omml = transform(&block_mathml("<mi>a</mi>")).unwrap();
         assert!(omml.contains("<m:oMathPara"), "got: {omml}");
         assert!(omml.contains("<m:oMath"));

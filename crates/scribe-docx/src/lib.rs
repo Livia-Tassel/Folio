@@ -3,7 +3,7 @@
 //! Supports the full Markdown feature set in §3.3 of the design doc:
 //! headings, paragraphs, blockquotes, lists (including tasks), code
 //! blocks with syntect highlighting, GFM tables, footnotes, hyperlinks,
-//! inline + block math (OMML), and thematic breaks.
+//! inline + block math (OMML), images, and thematic breaks.
 //!
 //! Because `docx-rs` has no native math support, we inject OMML via a
 //! two-phase pipeline:
@@ -13,6 +13,7 @@
 //! 2. After `docx-rs` packs the zip, [`postprocess_math`] reopens
 //!    `word/document.xml`, replaces each placeholder run (or paragraph
 //!    for block math) with the real OMML, and repacks the archive.
+#![allow(clippy::items_after_test_module)]
 
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Write};
@@ -774,7 +775,7 @@ mod tests {
     }
 
     #[test]
-    fn block_math_substitutes_to_oMathPara() {
+    fn block_math_substitutes_to_o_math_para() {
         let mut doc = Document::new();
         doc.push(Block::MathBlock {
             latex: "a + b = c".into(),
