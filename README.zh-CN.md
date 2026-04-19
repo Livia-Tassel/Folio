@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/folio-logo-transparent.png" alt="Folio logo" width="120" />
+  <img src="docs/images/folio-logo-transparent.png" alt="Folio logo" width="180" />
 </p>
 
 <h1 align="center">Folio</h1>
@@ -179,10 +179,24 @@ soffice --headless --convert-to pdf --outdir test/output test/output/folio-compr
 - [`docs/superpowers/specs/2026-04-17-scribe-md-to-docx-design.md`](docs/superpowers/specs/2026-04-17-scribe-md-to-docx-design.md)
 - [`docs/superpowers/plans/2026-04-17-scribe-v1-plan.md`](docs/superpowers/plans/2026-04-17-scribe-v1-plan.md)
 
-## 仓库统计
+## GitHub 活动
 
 <p align="center">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=Livia-Tassel&repo=Folio&theme=transparent&show_owner=true" alt="Folio 仓库统计" />
+  <a href="https://github.com/Livia-Tassel/Folio/stargazers">
+    <img src="https://img.shields.io/github/stars/Livia-Tassel/Folio?style=for-the-badge&logo=github&label=stars" alt="Folio GitHub stars" />
+  </a>
+  <a href="https://github.com/Livia-Tassel/Folio/network/members">
+    <img src="https://img.shields.io/github/forks/Livia-Tassel/Folio?style=for-the-badge&logo=github&label=forks" alt="Folio GitHub forks" />
+  </a>
+  <a href="https://github.com/Livia-Tassel/Folio/issues">
+    <img src="https://img.shields.io/github/issues/Livia-Tassel/Folio?style=for-the-badge&logo=github&label=issues" alt="Folio GitHub issues" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.star-history.com/#Livia-Tassel/Folio&Date">
+    <img src="https://api.star-history.com/svg?repos=Livia-Tassel/Folio&type=Date" alt="Folio star history chart" />
+  </a>
 </p>
 
 ## License
