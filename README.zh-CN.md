@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/folio-logo.png" alt="Folio logo" width="120" />
+  <img src="docs/images/folio-logo-transparent.png" alt="Folio logo" width="120" />
 </p>
 
 <h1 align="center">Folio</h1>
