@@ -1,13 +1,80 @@
 //! scribe-ast: typed Markdown AST used by all Scribe stages.
 //!
-//! Minimal v0: only the block kinds produced by M1-5 (H1–H6 headings and
-//! paragraphs). M2 expands this to the full set specified in
-//! `docs/superpowers/specs/2026-04-17-scribe-md-to-docx-design.md` §3.3.
+//! The AST has two layers: [`Block`] (document-level nodes like headings,
+//! paragraphs, lists, tables) and [`Inline`] (text runs, emphasis, links,
+//! inline code). Block nodes hold `Vec<Inline>` for their content.
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Block {
-    Heading { level: u8, text: String },
-    Paragraph { text: String },
+    Heading {
+        level: u8,
+        content: Vec<Inline>,
+    },
+    Paragraph {
+        content: Vec<Inline>,
+    },
+    BlockQuote {
+        blocks: Vec<Block>,
+    },
+    /// A code block (fenced ``` or indented). `lang` is the info string
+    /// after the fence (e.g. "rust"), empty for plain code.
+    CodeBlock {
+        lang: String,
+        code: String,
+    },
+    /// Ordered (with start number) or unordered list.
+    List {
+        ordered: bool,
+        /// Start number for ordered lists; ignored for unordered.
+        start: u64,
+        items: Vec<ListItem>,
+    },
+    /// GFM-style table. First row is the header.
+    Table {
+        alignments: Vec<Alignment>,
+        header: Vec<Vec<Inline>>,
+        rows: Vec<Vec<Vec<Inline>>>,
+    },
+    ThematicBreak,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListItem {
+    /// `Some(checked)` for GFM task list items, `None` for regular items.
+    pub task: Option<bool>,
+    pub blocks: Vec<Block>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Alignment {
+    #[default]
+    None,
+    Left,
+    Center,
+    Right,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Inline {
+    Text(String),
+    /// Bold (`**foo**` / `__foo__`).
+    Strong(Vec<Inline>),
+    /// Italic (`*foo*` / `_foo_`).
+    Emphasis(Vec<Inline>),
+    /// Strikethrough (`~~foo~~`).
+    Strikethrough(Vec<Inline>),
+    /// Inline code (`` `foo` ``).
+    Code(String),
+    /// Hyperlink. `title` is the optional tooltip.
+    Link {
+        url: String,
+        title: String,
+        content: Vec<Inline>,
+    },
+    /// Hard line break (two trailing spaces or `\` at end of line).
+    HardBreak,
+    /// Soft line break rendered as a space.
+    SoftBreak,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -25,6 +92,27 @@ impl Document {
     }
 }
 
+/// Helpers for building inlines in tests and simple parsers.
+pub mod build {
+    use super::Inline;
+
+    pub fn text(s: impl Into<String>) -> Inline {
+        Inline::Text(s.into())
+    }
+
+    pub fn strong(inlines: Vec<Inline>) -> Inline {
+        Inline::Strong(inlines)
+    }
+
+    pub fn emph(inlines: Vec<Inline>) -> Inline {
+        Inline::Emphasis(inlines)
+    }
+
+    pub fn code(s: impl Into<String>) -> Inline {
+        Inline::Code(s.into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -34,11 +122,18 @@ mod tests {
         let mut doc = Document::new();
         doc.push(Block::Heading {
             level: 1,
-            text: "Hello".into(),
+            content: vec![Inline::Text("Hi".into())],
         });
         doc.push(Block::Paragraph {
-            text: "World".into(),
+            content: vec![Inline::Text("Body".into())],
         });
         assert_eq!(doc.blocks.len(), 2);
+    }
+
+    #[test]
+    fn inline_tree_is_cloneable_and_comparable() {
+        let a = Inline::Strong(vec![Inline::Text("x".into())]);
+        let b = a.clone();
+        assert_eq!(a, b);
     }
 }
