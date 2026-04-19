@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Scribe",
+  "version": "0.1.0",
+  "identifier": "com.scribe.app",
+  "build": {
+    "frontendDist": "./frontend/build",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm --dir frontend dev",
+    "beforeBuildCommand": "pnpm --dir frontend build"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "title": "Scribe",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "msi", "nsis"],
+    "icon": [],
+    "macOS": {
+      "hardenedRuntime": true,
+      "minimumSystemVersion": "11.0",
+      "frameworks": [],
+      "exceptionDomain": ""
+    },
+    "windows": {
+      "digestAlgorithm": "sha256"
+    }
+  }
+}

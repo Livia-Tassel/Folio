@@ -3,8 +3,23 @@ name = "scribe-tauri"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Scribe desktop application — Markdown → .docx"
 
-# Tauri 2 dependencies, build.rs, and binary target added in M1-4.
-# This stub keeps cargo check passing during M1-2.
+[lib]
+name = "scribe_tauri_lib"
+# "staticlib" is needed for iOS/Android (future). "cdylib" for linking
+# from the frontend bundle. "rlib" for normal Rust consumers.
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "scribe"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { workspace = true, features = [] }
 
 [dependencies]
+tauri = { workspace = true, features = ["macos-private-api"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+scribe-core = { workspace = true }
