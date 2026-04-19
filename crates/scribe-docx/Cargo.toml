@@ -1,0 +1,10 @@
+[package]
+name = "scribe-docx"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+scribe-ast = { workspace = true }
+docx-rs = { workspace = true }
+anyhow = { workspace = true }

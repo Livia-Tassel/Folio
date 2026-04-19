@@ -1,0 +1,9 @@
+[package]
+name = "scribe-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+scribe-core = { workspace = true }
+anyhow = { workspace = true }

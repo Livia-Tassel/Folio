@@ -1,0 +1,8 @@
+[package]
+name = "scribe-preview"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+scribe-ast = { workspace = true }

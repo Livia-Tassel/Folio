@@ -1,0 +1,10 @@
+[package]
+name = "scribe-template"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+zip = { workspace = true }
+quick-xml = { workspace = true }
+thiserror = { workspace = true }

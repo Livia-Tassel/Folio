@@ -1,0 +1,55 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/scribe-ast",
+    "crates/scribe-parser",
+    "crates/scribe-math",
+    "crates/scribe-images",
+    "crates/scribe-highlight",
+    "crates/scribe-template",
+    "crates/scribe-docx",
+    "crates/scribe-preview",
+    "crates/scribe-core",
+    "crates/scribe-tauri",
+    "scribe-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/scribe-app/scribe"
+authors = ["Scribe contributors"]
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+quick-xml = "0.36"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+pulldown-cmark = { version = "0.12", default-features = false, features = ["simd"] }
+latex2mathml = "0.2"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp", "webp", "tiff"] }
+resvg = "0.44"
+syntect = { version = "5", default-features = false, features = ["default-fancy"] }
+docx-rs = "0.4"
+tauri = { version = "2", default-features = false }
+tauri-build = "2"
+
+# Internal crates
+scribe-ast = { path = "crates/scribe-ast" }
+scribe-parser = { path = "crates/scribe-parser" }
+scribe-math = { path = "crates/scribe-math" }
+scribe-images = { path = "crates/scribe-images" }
+scribe-highlight = { path = "crates/scribe-highlight" }
+scribe-template = { path = "crates/scribe-template" }
+scribe-docx = { path = "crates/scribe-docx" }
+scribe-preview = { path = "crates/scribe-preview" }
+scribe-core = { path = "crates/scribe-core" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

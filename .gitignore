@@ -1,0 +1,36 @@
+# Rust
+/target
+**/target
+Cargo.lock.bak
+
+# Node / pnpm
+node_modules
+crates/scribe-tauri/frontend/node_modules
+crates/scribe-tauri/frontend/.svelte-kit
+crates/scribe-tauri/frontend/build
+crates/scribe-tauri/frontend/dist
+
+# Tauri
+crates/scribe-tauri/gen/schemas
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Test artifacts
+fixtures/**/*.docx
+!fixtures/**/expected.docx
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example

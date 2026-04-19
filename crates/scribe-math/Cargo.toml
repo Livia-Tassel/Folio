@@ -1,0 +1,10 @@
+[package]
+name = "scribe-math"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+latex2mathml = { workspace = true }
+quick-xml = { workspace = true }
+thiserror = { workspace = true }

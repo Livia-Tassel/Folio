@@ -1,0 +1,10 @@
+[package]
+name = "scribe-tauri"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# Tauri 2 dependencies, build.rs, and binary target added in M1-4.
+# This stub keeps cargo check passing during M1-2.
+
+[dependencies]
