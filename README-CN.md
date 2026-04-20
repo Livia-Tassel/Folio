@@ -94,9 +94,21 @@ Folio 的目标就是把这些问题尽量前移到转换流程里解决。
 
 下面这组对比，使用的是同一份技术笔记先导出为 `.docx`，再统一用 **WPS Office** 打开做实际观感检查。
 
-![Folio 与 Pandoc 在 WPS 中的首屏对比](docs/images/wps-compare-opening-full.png)
-
-![Folio 与 Pandoc 在 WPS 中的 ClusterKV 页面对比](docs/images/wps-compare-clusterkv-full.png)
+<table>
+  <tr>
+    <td width="33.33%" valign="top">
+      <img src="test/output/Folio.png" alt="Folio sample page 1" width="100%" />
+    </td>
+    <td width="33.33%" valign="top">
+      <img src="test/output/Pandoc.png" alt="Folio sample page 2" width="100%" />
+    </td>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Folio</strong></td>
+    <td align="center"><strong>Pandoc</strong></td>
+  </tr>
+</table>
 
 在这份笔记里，Folio 相比 Pandoc 的优势主要集中在技术文档最关键的几个点：
 

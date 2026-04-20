@@ -116,9 +116,21 @@ The current sample exercises:
 
 The comparison below uses the same source note rendered as `.docx`, then opened in **WPS Office** for a practical end-user check.
 
-![Folio vs Pandoc opening view in WPS](docs/images/wps-compare-opening-full.png)
-
-![Folio vs Pandoc ClusterKV page in WPS](docs/images/wps-compare-clusterkv-full.png)
+<table>
+  <tr>
+    <td width="33.33%" valign="top">
+      <img src="test/output/Folio.png" alt="Folio sample page 1" width="100%" />
+    </td>
+    <td width="33.33%" valign="top">
+      <img src="test/output/Pandoc.png" alt="Folio sample page 2" width="100%" />
+    </td>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Folio</strong></td>
+    <td align="center"><strong>Pandoc</strong></td>
+  </tr>
+</table>
 
 In this note, Folio is materially stronger than Pandoc in the places that matter most for technical writing:
 
