@@ -248,7 +248,7 @@ pnpm --dir crates/scribe-tauri/frontend build
 For end users, GitHub Releases should be the default distribution channel.
 
 1. Bump the workspace version in [`Cargo.toml`](Cargo.toml).
-2. Create and push a tag such as `v0.1.1`.
+2. Create and push a tag such as `v0.1.2`.
 3. GitHub Actions will build and publish:
    - macOS Apple Silicon `.dmg`
    - macOS Intel `.dmg`

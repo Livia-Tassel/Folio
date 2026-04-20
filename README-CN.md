@@ -213,7 +213,7 @@ cargo tauri dev
 如果你想让别人拿到仓库后尽量“开箱即用”，默认分发方式应该是 GitHub Releases。
 
 1. 在 [`Cargo.toml`](Cargo.toml) 里更新版本号
-2. 创建并推送形如 `v0.1.1` 的 tag
+2. 创建并推送形如 `v0.1.2` 的 tag
 3. GitHub Actions 会自动构建并发布这些安装包：
    - macOS Apple Silicon `.dmg`
    - macOS Intel `.dmg`

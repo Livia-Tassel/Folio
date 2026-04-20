@@ -142,8 +142,8 @@ pub fn latex_to_mathml(latex: &str, display: Display) -> Result<String> {
         Display::Inline => latex2mathml::DisplayStyle::Inline,
         Display::Block => latex2mathml::DisplayStyle::Block,
     };
-    let mathml =
-        latex2mathml::latex_to_mathml(&normalized, dt).map_err(|e| MathError::Latex(e.to_string()))?;
+    let mathml = latex2mathml::latex_to_mathml(&normalized, dt)
+        .map_err(|e| MathError::Latex(e.to_string()))?;
     if let Some(parse_error) = extract_parse_error(&mathml) {
         return Err(MathError::Latex(parse_error));
     }
@@ -259,11 +259,7 @@ mod tests {
 
     #[test]
     fn top_level_newlines_are_wrapped_for_stacked_equations() {
-        let mathml = latex_to_mathml(
-            r"S(C_1)=0.75 \\ S(C_2)=0.25",
-            Display::Block,
-        )
-        .unwrap();
+        let mathml = latex_to_mathml(r"S(C_1)=0.75 \\ S(C_2)=0.25", Display::Block).unwrap();
         assert!(mathml.contains("<mtable"));
     }
 

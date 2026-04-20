@@ -680,7 +680,12 @@ fn register_numbering(out: Docx) -> Docx {
                 LevelText::new("%2."),
                 LevelJc::new("left"),
             )
-            .indent(Some(1440), Some(SpecialIndentType::Hanging(360)), None, None),
+            .indent(
+                Some(1440),
+                Some(SpecialIndentType::Hanging(360)),
+                None,
+                None,
+            ),
         )
         .add_level(
             Level::new(
@@ -690,7 +695,12 @@ fn register_numbering(out: Docx) -> Docx {
                 LevelText::new("%3."),
                 LevelJc::new("left"),
             )
-            .indent(Some(2160), Some(SpecialIndentType::Hanging(360)), None, None),
+            .indent(
+                Some(2160),
+                Some(SpecialIndentType::Hanging(360)),
+                None,
+                None,
+            ),
         );
 
     out.add_abstract_numbering(bullet_abstract)
