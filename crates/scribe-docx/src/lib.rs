@@ -21,8 +21,8 @@ use std::io::{Cursor, Read, Write};
 use docx_rs::{
     AbstractNumbering, AlignmentType, Docx, Footnote, Level, LevelJc, LevelOverride, LevelText,
     NumberFormat, Numbering, NumberingId, Paragraph, ParagraphBorder, ParagraphBorderPosition,
-    ParagraphBorders, ParagraphProperty, Run, RunFonts, RunProperty, Shading, Start, Style,
-    StyleType, Table, TableAlignmentType, TableCell, TableRow, WidthType,
+    ParagraphBorders, ParagraphProperty, Run, RunFonts, RunProperty, Shading, SpecialIndentType,
+    Start, Style, StyleType, Table, TableAlignmentType, TableCell, TableRow, WidthType,
 };
 use scribe_ast::{Alignment, Block, Document, Inline};
 
@@ -670,7 +670,7 @@ fn register_numbering(out: Docx) -> Docx {
                 LevelText::new("%1."),
                 LevelJc::new("left"),
             )
-            .indent(Some(720), None, None, None),
+            .indent(Some(720), Some(SpecialIndentType::Hanging(360)), None, None),
         )
         .add_level(
             Level::new(
@@ -680,7 +680,7 @@ fn register_numbering(out: Docx) -> Docx {
                 LevelText::new("%2."),
                 LevelJc::new("left"),
             )
-            .indent(Some(1440), None, None, None),
+            .indent(Some(1440), Some(SpecialIndentType::Hanging(360)), None, None),
         )
         .add_level(
             Level::new(
@@ -690,7 +690,7 @@ fn register_numbering(out: Docx) -> Docx {
                 LevelText::new("%3."),
                 LevelJc::new("left"),
             )
-            .indent(Some(2160), None, None, None),
+            .indent(Some(2160), Some(SpecialIndentType::Hanging(360)), None, None),
         );
 
     out.add_abstract_numbering(bullet_abstract)
@@ -965,6 +965,32 @@ mod tests {
 
         assert!(xml.contains(r#"w:startOverride w:val="3""#));
         assert!(xml.contains(r#"w:numId="1001""#));
+    }
+
+    #[test]
+    fn ordered_list_numbering_uses_hanging_indent() {
+        let doc = doc_from(vec![Block::List {
+            ordered: true,
+            start: 1,
+            items: vec![scribe_ast::ListItem {
+                task: None,
+                blocks: vec![Block::Paragraph {
+                    content: vec![Inline::Text("item".into())],
+                }],
+            }],
+        }]);
+        let bytes = emit(&doc).unwrap();
+        let cursor = std::io::Cursor::new(&bytes);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        use std::io::Read as _;
+        zip.by_name("word/numbering.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+
+        assert!(xml.contains(r#"w:abstractNumId="102""#));
+        assert!(xml.contains(r#"w:ind w:left="720" w:right="0" w:hanging="360""#));
     }
 }
 

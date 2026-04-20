@@ -12,6 +12,7 @@ use scribe_ast::{Alignment, Block, Document, Inline, ListItem};
 
 /// Parse a Markdown string into a [`Document`].
 pub fn parse(markdown: &str) -> Document {
+    let normalized = normalize_math_delimiters(markdown);
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_FOOTNOTES);
@@ -20,12 +21,63 @@ pub fn parse(markdown: &str) -> Document {
     options.insert(Options::ENABLE_SMART_PUNCTUATION);
     options.insert(Options::ENABLE_MATH);
 
-    let parser = Parser::new_ext(markdown, options);
+    let parser = Parser::new_ext(&normalized, options);
     let mut builder = Builder::new();
     for event in parser {
         builder.feed(event);
     }
     builder.finish()
+}
+
+fn normalize_math_delimiters(markdown: &str) -> String {
+    let mut out = String::with_capacity(markdown.len());
+    let mut in_fenced_code = false;
+
+    for raw_line in markdown.split_inclusive('\n') {
+        let line = raw_line.trim_end_matches('\n');
+        let trimmed = line.trim();
+
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            in_fenced_code = !in_fenced_code;
+            out.push_str(raw_line);
+            continue;
+        }
+
+        if in_fenced_code {
+            out.push_str(raw_line);
+            continue;
+        }
+
+        if trimmed == r"\[" || trimmed == r"\]" {
+            out.push_str(&raw_line.replacen(trimmed, "$$", 1));
+            continue;
+        }
+
+        out.push_str(&normalize_inline_paren_math(raw_line));
+    }
+
+    out
+}
+
+fn normalize_inline_paren_math(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let mut chars = line.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.peek().copied() {
+                Some('(') | Some(')') => {
+                    chars.next();
+                    out.push('$');
+                    continue;
+                }
+                _ => {}
+            }
+        }
+        out.push(ch);
+    }
+
+    out
 }
 
 /// Stack-based builder that turns pulldown-cmark events into nested blocks/inlines.
@@ -125,6 +177,18 @@ impl Builder {
         self.doc
     }
 
+    fn flush_open_paragraph(&mut self) {
+        let Some(Container::Paragraph { .. }) = self.stack.last() else {
+            return;
+        };
+        let Some(Container::Paragraph { inlines }) = self.stack.pop() else {
+            return;
+        };
+        if !inlines.is_empty() {
+            self.push_block(Block::Paragraph { content: inlines });
+        }
+    }
+
     fn feed(&mut self, event: Event<'_>) {
         // Code blocks capture raw text directly, bypassing the inline tree.
         if let Some(Container::CodeBlock { text, .. }) = self.stack.last_mut() {
@@ -154,7 +218,10 @@ impl Builder {
                     *task = Some(checked);
                 }
             }
-            Event::Rule => self.push_block(Block::ThematicBreak),
+            Event::Rule => {
+                self.flush_open_paragraph();
+                self.push_block(Block::ThematicBreak);
+            }
             Event::FootnoteReference(label) => {
                 self.push_inline(Inline::FootnoteRef(label.into_string()));
             }
@@ -162,11 +229,12 @@ impl Builder {
                 self.push_inline(Inline::InlineMath(latex.into_string()));
             }
             Event::DisplayMath(latex) => {
+                self.flush_open_paragraph();
                 // Block-level math — emit as a MathBlock in the document body.
                 // If we're inside a block container, the push_block routing
                 // sends it to the right parent.
                 self.push_block(Block::MathBlock {
-                    latex: latex.into_string(),
+                    latex: latex.trim().to_string(),
                 });
             }
             // HTML events arrive later; unhandled for now.
@@ -681,5 +749,40 @@ mod tests {
             panic!("footnote definition should wrap a paragraph");
         };
         assert_eq!(content, &vec![Inline::Text("The footnote body.".into())]);
+    }
+
+    #[test]
+    fn normalizes_bracket_display_math() {
+        let doc = parse("\\[\nE = mc^2\n\\]");
+        assert!(matches!(
+            &doc.blocks[0],
+            Block::MathBlock { latex } if latex == "E = mc^2"
+        ));
+    }
+
+    #[test]
+    fn normalizes_paren_inline_math() {
+        let doc = parse(r"Current query \(q\) attends to \(\mu_i\).");
+        let Block::Paragraph { content } = &doc.blocks[0] else {
+            panic!();
+        };
+        let math: Vec<_> = content
+            .iter()
+            .filter_map(|inline| match inline {
+                Inline::InlineMath(s) => Some(s.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(math, vec!["q", "\\mu_i"]);
+    }
+
+    #[test]
+    fn display_math_stays_after_intro_paragraph() {
+        let doc = parse("Intro line.\n\\[\na+b\n\\]");
+        assert!(matches!(&doc.blocks[0], Block::Paragraph { .. }));
+        assert!(matches!(
+            &doc.blocks[1],
+            Block::MathBlock { latex } if latex == "a+b"
+        ));
     }
 }

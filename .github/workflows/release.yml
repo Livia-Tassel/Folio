@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish-tauri:
+    name: Release (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            os: macos-14
+            args: --target aarch64-apple-darwin
+            rust_targets: aarch64-apple-darwin
+          - name: macOS Intel
+            os: macos-13
+            args: --target x86_64-apple-darwin
+            rust_targets: x86_64-apple-darwin
+          - name: Windows x64
+            os: windows-2022
+            args: ""
+            rust_targets: ""
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: crates/scribe-tauri/frontend/pnpm-lock.yaml
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add extra Rust target
+        if: matrix.rust_targets != ''
+        run: rustup target add ${{ matrix.rust_targets }}
+
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install frontend dependencies
+        run: pnpm --dir crates/scribe-tauri/frontend install --frozen-lockfile
+
+      - name: Generate desktop icons
+        run: pnpm --dir crates/scribe-tauri/frontend exec tauri icon ../icons/icon.png --output ../icons
+
+      - uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/scribe-tauri
+          tauriScript: pnpm --dir frontend exec tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: Folio ${{ github.ref_name }}
+          releaseBody: |
+            Download the installer that matches your platform.
+            macOS users should choose the Apple Silicon or Intel build.
+            Windows users will usually want the NSIS `.exe` installer.
+          generateReleaseNotes: true
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}

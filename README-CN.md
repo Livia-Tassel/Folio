@@ -11,10 +11,31 @@
 <p align="center">
   <a href="README.md"><strong>English</strong></a>
   ·
-  <a href="README.zh-CN.md">简体中文</a>
+  <a href="README-CN.md">简体中文</a>
 </p>
 
 Folio 是一个跨平台桌面应用和 Rust 工作区，用于把 Markdown 转成结构正确、可继续编辑的 Microsoft Word 文档，而不是“能打开但还得再修一遍”的导出结果。它重点解决公式、图片、表格、层级样式等常见问题，让导出的文档在 Word 或 LibreOffice 中看起来更像最终成品。
+
+## 快速开始
+
+### 对大多数用户
+
+Win 和 mac 上最简单的用法，都是直接从 [GitHub Releases](https://github.com/Livia-Tassel/Folio/releases) 下载已经打好的安装包，而不是自己配置 Rust / Node 环境。
+
+- macOS：下载对应 CPU 架构的 `.dmg`
+- Apple Silicon：选 `aarch64` / `arm64`
+- Intel Mac：选 `x64`
+- 打开 `.dmg` 后，把 **Folio** 拖到 **Applications**
+- Windows：优先下载 NSIS 的 `.exe` 安装包，最省事；如果你在企业或统一部署环境，也可以用 `.msi`
+
+由于 Folio 目前还是 pre-alpha，且很可能尚未完成代码签名，首次启动时系统可能会提示风险：
+
+- macOS：如果 Gatekeeper 阻止打开，请在 Applications 里右键 **Folio**，选择 **Open**
+- Windows：如果出现 SmartScreen，点击 **More info** -> **Run anyway**
+
+### 如果你是开发者
+
+下面的“开发”部分适合想从源码运行、调试或参与贡献的人。
 
 ## 为什么做 Folio
 
@@ -160,6 +181,20 @@ pnpm --dir crates/scribe-tauri/frontend check
 cd crates/scribe-tauri
 cargo tauri dev
 ```
+
+## 发布给普通用户
+
+如果你想让别人拿到仓库后尽量“开箱即用”，默认分发方式应该是 GitHub Releases。
+
+1. 在 [`Cargo.toml`](Cargo.toml) 里更新版本号
+2. 创建并推送形如 `v0.1.1` 的 tag
+3. GitHub Actions 会自动构建并发布这些安装包：
+   - macOS Apple Silicon `.dmg`
+   - macOS Intel `.dmg`
+   - Windows NSIS `.exe`
+   - Windows `.msi`
+
+release workflow 会在打包前，基于 [`crates/scribe-tauri/icons/icon.png`](crates/scribe-tauri/icons/icon.png) 自动生成各平台需要的图标资源。
 
 ## 样例与回归测试
 

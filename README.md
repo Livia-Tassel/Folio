@@ -38,6 +38,27 @@
 
 Folio is a cross-platform desktop application and Rust workspace for turning Markdown into Microsoft Word documents with native Word structures instead of brittle export artifacts. The focus is practical fidelity: editable equations, sane image sizing, readable tables, predictable heading hierarchy, and output that looks intentional when it opens in Word or LibreOffice.
 
+## Quick Start
+
+### For most users
+
+The simplest way to use Folio on both macOS and Windows is to download a prebuilt installer from [GitHub Releases](https://github.com/Livia-Tassel/Folio/releases).
+
+- macOS: download the `.dmg` that matches your CPU.
+- Apple Silicon: choose the `aarch64` / `arm64` build.
+- Intel Mac: choose the `x64` build.
+- Open the `.dmg`, then drag **Folio** into **Applications**.
+- Windows: download the NSIS `.exe` installer for the simplest setup. A `.msi` package is also published for managed or enterprise environments.
+
+Because Folio is still pre-alpha and may be unsigned, the first launch may show a platform warning:
+
+- macOS: right-click **Folio** in Applications and choose **Open** the first time if Gatekeeper blocks it.
+- Windows: if SmartScreen appears, click **More info** -> **Run anyway**.
+
+### If you want to build from source
+
+Use the development setup below only if you want to contribute or run the app from source.
+
 ## Why Folio
 
 Most Markdown-to-DOCX workflows break down in the last 10%:
@@ -195,6 +216,20 @@ cargo tauri dev
 ```bash
 pnpm --dir crates/scribe-tauri/frontend build
 ```
+
+## Shipping Releases
+
+For end users, GitHub Releases should be the default distribution channel.
+
+1. Bump the workspace version in [`Cargo.toml`](Cargo.toml).
+2. Create and push a tag such as `v0.1.1`.
+3. GitHub Actions will build and publish:
+   - macOS Apple Silicon `.dmg`
+   - macOS Intel `.dmg`
+   - Windows NSIS `.exe`
+   - Windows `.msi`
+
+The release workflow also generates platform icon assets from [`crates/scribe-tauri/icons/icon.png`](crates/scribe-tauri/icons/icon.png) before bundling.
 
 ## Fixture-Based Testing
 
