@@ -90,6 +90,20 @@ Folio 的目标就是把这些问题尽量前移到转换流程里解决。
 - 位图与 SVG 图片嵌入
 - 脚注
 
+## 用 WPS 对比 Pandoc
+
+下面这组对比，使用的是同一份技术笔记先导出为 `.docx`，再统一用 **WPS Office** 打开做实际观感检查。
+
+![Folio 与 Pandoc 在 WPS 中的首屏对比](docs/images/wps-compare-opening-full.png)
+
+![Folio 与 Pandoc 在 WPS 中的 ClusterKV 页面对比](docs/images/wps-compare-clusterkv-full.png)
+
+在这份笔记里，Folio 相比 Pandoc 的优势主要集中在技术文档最关键的几个点：
+
+- 公式密集段落更接近原本的阅读顺序，不容易塌成行内碎片
+- 图片、标题、正文混排时更稳，跨页后的结构更完整
+- 长笔记整体更紧凑，不容易像 Pandoc 那样明显增页、变松
+
 ## 当前能力
 
 Folio 目前仍处于 **pre-alpha**，但核心转换链路已经不是原型脚本，而是一个相对完整的多 crate Rust 工程。

@@ -112,6 +112,20 @@ The current sample exercises:
 - raster and SVG image embedding
 - footnotes
 
+## WPS Spot Check vs Pandoc
+
+The comparison below uses the same source note rendered as `.docx`, then opened in **WPS Office** for a practical end-user check.
+
+![Folio vs Pandoc opening view in WPS](docs/images/wps-compare-opening-full.png)
+
+![Folio vs Pandoc ClusterKV page in WPS](docs/images/wps-compare-clusterkv-full.png)
+
+In this note, Folio is materially stronger than Pandoc in the places that matter most for technical writing:
+
+- formula-heavy sections stay closer to the intended reading order instead of collapsing into inline-like fragments
+- image + heading + paragraph blocks hold together more predictably across pages
+- long structured notes stay denser and cleaner instead of ballooning into many extra pages
+
 ## What Works Today
 
 Folio is still **pre-alpha**, but the core conversion path is already structured as a serious multi-crate system rather than a prototype script.
