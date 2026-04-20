@@ -48,7 +48,7 @@ The simplest way to use Folio on both macOS and Windows is to download a prebuil
 - Apple Silicon: choose the `aarch64` / `arm64` build.
 - Intel Mac: choose the `x64` build.
 - Open the `.dmg`, then drag **Folio** into **Applications**.
-- Windows: download the NSIS `.exe` installer for the simplest setup. A `.msi` package is also published for managed or enterprise environments.
+- Windows: download the NSIS `.exe` installer for the simplest setup.
 
 Because Folio is still pre-alpha and may be unsigned, the first launch may show a platform warning:
 
@@ -253,7 +253,6 @@ For end users, GitHub Releases should be the default distribution channel.
    - macOS Apple Silicon `.dmg`
    - macOS Intel `.dmg`
    - Windows NSIS `.exe`
-   - Windows `.msi`
 
 The release workflow also generates platform icon assets from [`crates/scribe-tauri/icons/icon.png`](crates/scribe-tauri/icons/icon.png) before bundling.
 

@@ -38,7 +38,7 @@ jobs:
             rust_targets: x86_64-apple-darwin
           - name: Windows x64
             os: windows-2022
-            args: ""
+            args: -b nsis
             rust_targets: ""
 
     runs-on: ${{ matrix.os }}

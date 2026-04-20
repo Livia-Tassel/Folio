@@ -26,7 +26,7 @@ Win 和 mac 上最简单的用法，都是直接从 [GitHub Releases](https://gi
 - Apple Silicon：选 `aarch64` / `arm64`
 - Intel Mac：选 `x64`
 - 打开 `.dmg` 后，把 **Folio** 拖到 **Applications**
-- Windows：优先下载 NSIS 的 `.exe` 安装包，最省事；如果你在企业或统一部署环境，也可以用 `.msi`
+- Windows：优先下载 NSIS 的 `.exe` 安装包，最省事
 
 由于 Folio 目前还是 pre-alpha，且很可能尚未完成代码签名，首次启动时系统可能会提示风险：
 
@@ -218,7 +218,6 @@ cargo tauri dev
    - macOS Apple Silicon `.dmg`
    - macOS Intel `.dmg`
    - Windows NSIS `.exe`
-   - Windows `.msi`
 
 release workflow 会在打包前，基于 [`crates/scribe-tauri/icons/icon.png`](crates/scribe-tauri/icons/icon.png) 自动生成各平台需要的图标资源。
 
