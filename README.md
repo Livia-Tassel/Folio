@@ -44,6 +44,8 @@ Folio is a cross-platform desktop application and Rust workspace for turning Mar
 
 The simplest way to use Folio on both macOS and Windows is to download a prebuilt installer from [GitHub Releases](https://github.com/Livia-Tassel/Folio/releases).
 
+At the moment, the published desktop releases are still **experimental** and may not work reliably on every machine. If you need the most dependable path today, use the CLI from source instead.
+
 - macOS: download the `.dmg` that matches your CPU.
 - Apple Silicon: choose the `aarch64` / `arm64` build.
 - Intel Mac: choose the `x64` build.
@@ -58,6 +60,26 @@ Because Folio is still pre-alpha and may be unsigned, the first launch may show 
 ### If you want to build from source
 
 Use the development setup below only if you want to contribute or run the app from source.
+
+### Recommended CLI Usage
+
+If the desktop release does not work for you yet, the CLI is the recommended fallback.
+
+macOS:
+
+```bash
+cd /path/to/Folio
+cargo run -p scribe-cli -- "/absolute/path/input.md" -o "/absolute/path/output.docx"
+```
+
+Windows (PowerShell):
+
+```powershell
+cd C:\path\to\Folio
+cargo run -p scribe-cli -- "C:\absolute\path\input.md" -o "C:\absolute\path\output.docx"
+```
+
+You can also omit `-o`, and Folio will write `<input>.docx` next to the source Markdown file.
 
 ## Why Folio
 
