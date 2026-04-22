@@ -224,13 +224,17 @@ fn render_inline(inline: &Inline, out: &mut String) {
             title,
             content,
         } => {
-            out.push_str(&format!(
-                "<a href=\"{}\" title=\"{}\">",
-                escape_html(url),
-                escape_html(title)
-            ));
-            render_inlines(content, out);
-            out.push_str("</a>");
+            if is_safe_link_url(url) {
+                out.push_str(&format!(
+                    "<a href=\"{}\" title=\"{}\">",
+                    escape_html(url),
+                    escape_html(title)
+                ));
+                render_inlines(content, out);
+                out.push_str("</a>");
+            } else {
+                render_inlines(content, out);
+            }
         }
         Inline::Image { url, alt, title } => {
             out.push_str(&format!(
@@ -270,6 +274,41 @@ fn escape_html(input: &str) -> String {
         }
     }
     out
+}
+
+fn is_safe_link_url(url: &str) -> bool {
+    let trimmed = url.trim_start_matches(|c: char| c.is_ascii_whitespace() || c.is_control());
+    let Some(colon) = trimmed.find(':') else {
+        return true;
+    };
+
+    let first_path_char = ['/', '?', '#']
+        .iter()
+        .filter_map(|ch| trimmed.find(*ch))
+        .min()
+        .unwrap_or(usize::MAX);
+    if colon > first_path_char {
+        return true;
+    }
+
+    let scheme = &trimmed[..colon];
+    if !is_url_scheme(scheme) {
+        return false;
+    }
+
+    matches!(
+        scheme.to_ascii_lowercase().as_str(),
+        "http" | "https" | "mailto"
+    )
+}
+
+fn is_url_scheme(scheme: &str) -> bool {
+    let mut chars = scheme.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    first.is_ascii_alphabetic()
+        && chars.all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '+' | '-' | '.'))
 }
 
 #[cfg(test)]
@@ -372,5 +411,50 @@ mod tests {
         let html = render_standalone(&doc);
         assert!(html.contains("<!doctype html>"));
         assert!(html.contains(".scribe-preview"));
+    }
+
+    #[test]
+    fn unsafe_link_scheme_renders_plain_content() {
+        let mut doc = Document::new();
+        doc.push(Block::Paragraph {
+            content: vec![Inline::Link {
+                url: "javascript:alert(1)".into(),
+                title: String::new(),
+                content: vec![Inline::Text("click".into())],
+            }],
+        });
+
+        let html = render(&doc);
+        assert_eq!(html, "<p>click</p>");
+    }
+
+    #[test]
+    fn unsafe_link_scheme_with_control_chars_renders_plain_content() {
+        let mut doc = Document::new();
+        doc.push(Block::Paragraph {
+            content: vec![Inline::Link {
+                url: "java\nscript:alert(1)".into(),
+                title: String::new(),
+                content: vec![Inline::Text("click".into())],
+            }],
+        });
+
+        let html = render(&doc);
+        assert_eq!(html, "<p>click</p>");
+    }
+
+    #[test]
+    fn safe_link_scheme_keeps_anchor() {
+        let mut doc = Document::new();
+        doc.push(Block::Paragraph {
+            content: vec![Inline::Link {
+                url: "https://example.com".into(),
+                title: "site".into(),
+                content: vec![Inline::Text("example".into())],
+            }],
+        });
+
+        let html = render(&doc);
+        assert!(html.contains(r#"<a href="https://example.com" title="site">example</a>"#));
     }
 }

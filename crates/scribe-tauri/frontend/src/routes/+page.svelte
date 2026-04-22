@@ -33,13 +33,10 @@ fn main() {
   let busy = $state<boolean>(false);
   let error = $state<string | null>(null);
 
-  let debounceHandle = $state<ReturnType<typeof setTimeout> | null>(null);
-
   $effect(() => {
     // Debounce: fire 250ms after typing stops.
     const snapshot = markdown;
-    if (debounceHandle) clearTimeout(debounceHandle);
-    debounceHandle = setTimeout(async () => {
+    const debounceHandle = setTimeout(async () => {
       try {
         previewHtml = await invoke<string>("preview_html", { markdown: snapshot });
         error = null;
@@ -47,6 +44,7 @@ fn main() {
         error = String(e);
       }
     }, 250);
+    return () => clearTimeout(debounceHandle);
   });
 
   async function exportDocx() {

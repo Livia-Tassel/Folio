@@ -88,10 +88,10 @@ impl<'a> EmitCtx<'a> {
                     .insert(token.clone(), MathReplacement::InlineRun(omml));
             }
             Err(_) => {
-                // Fallback: leave the LaTeX source visible as code.
+                // Fallback: leave the LaTeX source visible as escaped Word text.
                 self.math_map.insert(
                     token.clone(),
-                    MathReplacement::InlineRun(format!("<!-- math failed: {latex} -->")),
+                    MathReplacement::InlineRun(fallback_inline_math_xml(latex)),
                 );
             }
         }
@@ -110,7 +110,7 @@ impl<'a> EmitCtx<'a> {
             Err(_) => {
                 self.math_map.insert(
                     token.clone(),
-                    MathReplacement::ParagraphBlock(format!("<!-- math failed: {latex} -->")),
+                    MathReplacement::ParagraphBlock(fallback_block_math_xml(latex)),
                 );
             }
         }
@@ -119,10 +119,45 @@ impl<'a> EmitCtx<'a> {
 }
 
 enum MathReplacement {
-    /// Replace the enclosing `<w:r>…{token}…</w:r>` with the OMML.
+    /// Replace the enclosing `<w:r>…{token}…</w:r>` with OMML or a fallback run.
     InlineRun(String),
-    /// Replace the enclosing `<w:p>…{token}…</w:p>` with the OMML wrapped in an `<m:oMathPara>`.
+    /// Replace the enclosing `<w:p>…{token}…</w:p>` with OMML or a fallback paragraph.
     ParagraphBlock(String),
+}
+
+fn fallback_inline_math_xml(latex: &str) -> String {
+    word_text_run_xml(&format!("${}$", compact_math_fallback(latex)))
+}
+
+fn fallback_block_math_xml(latex: &str) -> String {
+    format!(
+        "<w:p>{}</w:p>",
+        word_text_run_xml(&format!("$$ {} $$", compact_math_fallback(latex)))
+    )
+}
+
+fn word_text_run_xml(text: &str) -> String {
+    format!(
+        r#"<w:r><w:rPr><w:rStyle w:val="InlineCode"/></w:rPr><w:t xml:space="preserve">{}</w:t></w:r>"#,
+        escape_xml_text(text)
+    )
+}
+
+fn compact_math_fallback(latex: &str) -> String {
+    latex.replace(['\r', '\n'], " ")
+}
+
+fn escape_xml_text(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    for ch in input.chars() {
+        match ch {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            _ => out.push(ch),
+        }
+    }
+    out
 }
 
 /// Apply a block to the docx, returning the updated docx.
@@ -296,17 +331,7 @@ fn render_list_item(
     }
     for block in blocks {
         out = match block {
-            Block::List { items, ordered, .. } => {
-                let nested_num = if *ordered {
-                    ABSTRACT_NUM_ORDERED
-                } else {
-                    ABSTRACT_NUM_UNORDERED
-                };
-                for nested in items {
-                    out = render_list_item(out, nested, nested_num, indent_level + 1, ctx);
-                }
-                out
-            }
+            Block::List { .. } => render_block(out, block, indent_level + 1, ctx),
             other => render_block(out, other, indent_level, ctx),
         };
     }
@@ -745,6 +770,15 @@ mod tests {
         d
     }
 
+    fn zip_entry_text(bytes: &[u8], name: &str) -> String {
+        let cursor = std::io::Cursor::new(bytes);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        use std::io::Read as _;
+        zip.by_name(name).unwrap().read_to_string(&mut xml).unwrap();
+        xml
+    }
+
     #[test]
     fn emits_valid_zip_container() {
         let doc = doc_from(vec![
@@ -1001,6 +1035,52 @@ mod tests {
 
         assert!(xml.contains(r#"w:abstractNumId="102""#));
         assert!(xml.contains(r#"w:ind w:left="720" w:right="0" w:hanging="360""#));
+    }
+
+    #[test]
+    fn nested_lists_use_registered_numbering_ids() {
+        let doc = doc_from(vec![Block::List {
+            ordered: false,
+            start: 0,
+            items: vec![scribe_ast::ListItem {
+                task: None,
+                blocks: vec![
+                    Block::Paragraph {
+                        content: vec![Inline::Text("parent".into())],
+                    },
+                    Block::List {
+                        ordered: true,
+                        start: 3,
+                        items: vec![scribe_ast::ListItem {
+                            task: None,
+                            blocks: vec![Block::Paragraph {
+                                content: vec![Inline::Text("nested".into())],
+                            }],
+                        }],
+                    },
+                ],
+            }],
+        }]);
+
+        let bytes = emit(&doc).unwrap();
+        let document_xml = zip_entry_text(&bytes, "word/document.xml");
+        let numbering_xml = zip_entry_text(&bytes, "word/numbering.xml");
+
+        assert!(document_xml.contains(r#"w:numId w:val="1001""#));
+        assert!(document_xml.contains(r#"w:numId w:val="1002""#));
+        assert!(!document_xml.contains(r#"w:numId w:val="101""#));
+        assert!(!document_xml.contains(r#"w:numId w:val="102""#));
+        assert!(numbering_xml.contains(r#"w:numId="1002""#));
+        assert!(numbering_xml.contains(r#"w:startOverride w:val="3""#));
+    }
+
+    #[test]
+    fn failed_math_fallback_is_visible_escaped_word_text() {
+        let fallback = fallback_inline_math_xml(r"-- <bad> &");
+
+        assert!(fallback.contains(r#"<w:t xml:space="preserve">"#));
+        assert!(fallback.contains("$-- &lt;bad&gt; &amp;$"));
+        assert!(!fallback.contains("<!--"));
     }
 }
 
