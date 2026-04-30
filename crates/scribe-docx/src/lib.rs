@@ -269,11 +269,7 @@ fn paragraph_from_runs(runs: Vec<Run>) -> Paragraph {
     if runs.is_empty() {
         // Empty source line: emit a placeholder space so the paragraph
         // still renders with the monospace style.
-        p = p.add_run(
-            Run::new()
-                .add_text("")
-                .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas")),
-        );
+        p = p.add_run(Run::new().add_text("").fonts(code_fonts()));
     } else {
         for r in runs {
             p = p.add_run(r);
@@ -283,9 +279,7 @@ fn paragraph_from_runs(runs: Vec<Run>) -> Paragraph {
 }
 
 fn token_to_run(token: &scribe_highlight::Token, text: &str) -> Run {
-    let mut run = Run::new()
-        .add_text(text)
-        .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas"));
+    let mut run = Run::new().add_text(text).fonts(code_fonts());
     if let Some(color) = &token.color {
         run = run.color(color);
     }
@@ -531,9 +525,7 @@ impl RunStyle {
             run = run.strike();
         }
         if self.code {
-            run = run
-                .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas"))
-                .style("InlineCode");
+            run = run.fonts(code_fonts()).style("InlineCode");
         }
         if self.link {
             run = run.color("0563C1").underline("single");
@@ -545,6 +537,19 @@ impl RunStyle {
 fn heading_style_id(level: u8) -> String {
     let clamped = level.clamp(1, 6);
     format!("Heading{clamped}")
+}
+
+/// Font set used by every code-bearing style and run.
+///
+/// `east_asia` is set so a Chinese (or other CJK) character inside a code
+/// block doesn't fall through to whatever font Word picks at render time —
+/// the chosen face won't be monospaced and the block looks wrong. Word
+/// substitutes if the listed face is missing on the host system.
+fn code_fonts() -> RunFonts {
+    RunFonts::new()
+        .ascii("Menlo")
+        .hi_ansi("Consolas")
+        .east_asia("PingFang SC")
 }
 
 fn register_builtin_styles(mut out: Docx) -> Docx {
@@ -606,7 +611,7 @@ fn source_code_style() -> Style {
         .next("SourceCode")
         .unhide_when_used();
     style.run_property = RunProperty::new()
-        .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas"))
+        .fonts(code_fonts())
         .size(21)
         .color("111827");
     style.paragraph_property = ParagraphProperty::new()
@@ -620,7 +625,7 @@ fn inline_code_style() -> Style {
         .name("Inline Code")
         .unhide_when_used();
     style.run_property = RunProperty::new()
-        .fonts(RunFonts::new().ascii("Menlo").hi_ansi("Consolas"))
+        .fonts(code_fonts())
         .size(21)
         .color("111827")
         .shading(Shading::new().fill("F3F4F6"));
@@ -1081,6 +1086,28 @@ mod tests {
         assert!(fallback.contains(r#"<w:t xml:space="preserve">"#));
         assert!(fallback.contains("$-- &lt;bad&gt; &amp;$"));
         assert!(!fallback.contains("<!--"));
+    }
+
+    #[test]
+    fn code_styles_set_east_asia_font_for_chinese_fallback() {
+        // Without an explicit eastAsia font on code runs, a Chinese character
+        // inside a code block falls through to whatever Word picks at render
+        // time — typically not a monospaced face. Folio's promise of "looks
+        // intentional in Word" requires us to pin down the east-asia choice.
+        let doc = doc_from(vec![Block::CodeBlock {
+            lang: "rust".into(),
+            code: "let s = \"你好\";".into(),
+        }]);
+        let bytes = emit(&doc).unwrap();
+        let styles_xml = zip_entry_text(&bytes, "word/styles.xml");
+
+        // The SourceCode and InlineCode styles must declare an eastAsia font.
+        // We look for the attribute substring on any rFonts element so that
+        // either single- or double-quote serialization is tolerated.
+        assert!(
+            styles_xml.contains("w:eastAsia"),
+            "code styles must declare a w:eastAsia font; got styles.xml: {styles_xml}"
+        );
     }
 }
 
