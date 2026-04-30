@@ -1,0 +1,18 @@
+[package]
+name = "scribe-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "_folio"
+crate-type = ["cdylib"]
+
+[features]
+default = ["extension-module"]
+extension-module = ["pyo3/extension-module"]
+
+[dependencies]
+scribe-core = { workspace = true }
+pyo3 = { version = "0.22", features = ["abi3-py38"] }

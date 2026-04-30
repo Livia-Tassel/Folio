@@ -10,6 +10,24 @@ members = [
     "crates/scribe-docx",
     "crates/scribe-preview",
     "crates/scribe-core",
+    "crates/scribe-py",
+    "crates/scribe-tauri",
+    "scribe-cli",
+]
+# Keep `cargo build` / `cargo test` (without explicit -p or --workspace)
+# focused on what desktop / CLI contributors typically iterate on.
+# scribe-py builds to a Python extension and is exercised via maturin,
+# not via `cargo` directly.
+default-members = [
+    "crates/scribe-ast",
+    "crates/scribe-parser",
+    "crates/scribe-math",
+    "crates/scribe-images",
+    "crates/scribe-highlight",
+    "crates/scribe-template",
+    "crates/scribe-docx",
+    "crates/scribe-preview",
+    "crates/scribe-core",
     "crates/scribe-tauri",
     "scribe-cli",
 ]
