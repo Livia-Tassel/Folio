@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { onMount } from "svelte";
 
   const SAMPLE = `# Folio
 
@@ -28,10 +29,33 @@ fn main() {
 \`\`\`
 `;
 
+  // "" = no theme (Folio's built-in styles). Otherwise a name from list_themes().
+  const THEME_STORAGE_KEY = "folio.theme";
+  const DEFAULT_OPTION = { value: "", label: "Default (Folio)" };
+
   let markdown = $state<string>(SAMPLE);
   let previewHtml = $state<string>("");
   let busy = $state<boolean>(false);
   let error = $state<string | null>(null);
+  let themes = $state<string[]>([]);
+  let theme = $state<string>("");
+
+  onMount(async () => {
+    try {
+      themes = await invoke<string[]>("list_themes");
+    } catch (e) {
+      // Theme picker just won't render extra options — not fatal.
+      themes = [];
+    }
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    if (saved !== null && (saved === "" || themes.includes(saved))) {
+      theme = saved;
+    }
+  });
+
+  $effect(() => {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  });
 
   $effect(() => {
     // Debounce: fire 250ms after typing stops.
@@ -50,7 +74,10 @@ fn main() {
   async function exportDocx() {
     busy = true;
     try {
-      const bytes = await invoke<number[]>("convert_string", { markdown });
+      const bytes = await invoke<number[]>("convert_string", {
+        markdown,
+        theme: theme || null,
+      });
       // Save via a temporary download — in a real Tauri app this would use
       // the dialog plugin to prompt for a destination path.
       const blob = new Blob([new Uint8Array(bytes)], {
@@ -79,13 +106,28 @@ fn main() {
       <span class="text-lg font-semibold tracking-tight">Folio</span>
       <span class="text-xs text-neutral-500">Markdown → Word</span>
     </div>
-    <button
-      class="rounded-md bg-neutral-900 px-4 py-1.5 text-sm text-white shadow-sm transition hover:bg-neutral-700 disabled:opacity-50"
-      disabled={busy}
-      onclick={exportDocx}
-    >
-      {busy ? "Exporting…" : "Export .docx"}
-    </button>
+    <div class="flex items-center gap-2">
+      <label class="flex items-center gap-1.5 text-xs text-neutral-600">
+        <span>Theme</span>
+        <select
+          class="rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-800 outline-none focus:border-neutral-500"
+          bind:value={theme}
+          aria-label="Theme"
+        >
+          <option value={DEFAULT_OPTION.value}>{DEFAULT_OPTION.label}</option>
+          {#each themes as name (name)}
+            <option value={name}>{name}</option>
+          {/each}
+        </select>
+      </label>
+      <button
+        class="rounded-md bg-neutral-900 px-4 py-1.5 text-sm text-white shadow-sm transition hover:bg-neutral-700 disabled:opacity-50"
+        disabled={busy}
+        onclick={exportDocx}
+      >
+        {busy ? "Exporting…" : "Export .docx"}
+      </button>
+    </div>
   </header>
 
   {#if error}

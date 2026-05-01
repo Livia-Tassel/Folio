@@ -10,6 +10,7 @@ pub fn run() {
             commands::convert_string,
             commands::preview_html,
             commands::preview_standalone,
+            commands::list_themes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
