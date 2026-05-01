@@ -105,6 +105,44 @@ html = folio.preview_html("# Title\n\nbody")
 
 The wheel ships as `cp38-abi3`, so a single download works on every CPython 3.8+ on macOS (Apple Silicon + Intel), Linux x86_64 + aarch64, and Windows x64. The conversion runs entirely in Rust — `convert()` releases the GIL, so multiple threads can render in parallel.
 
+## Templates
+
+The output's fonts, sizes, headings, code style, and paragraph spacing all come from a Word *style sheet*. Folio ships built-in themes for the common cases and accepts your own reference `.docx` for everything else.
+
+### Built-in themes
+
+```bash
+# Pick a theme by name. Use --list-themes to see what ships.
+scribe-cli paper.md --theme academic   -o paper.docx
+scribe-cli paper.md --theme thesis-cn  -o paper.docx
+scribe-cli --list-themes
+```
+
+```python
+import folio
+folio.convert(md, theme="academic")
+folio.list_themes()  # ["academic", "thesis-cn"]
+```
+
+| Theme | Use it for |
+|---|---|
+| `academic` | English academic paper. Times New Roman 12pt body, 1.5 line height, classic heading hierarchy. |
+| `thesis-cn` | 中文学位论文。宋体正文 + 黑体标题，1.5 倍行距，首行缩进 2 字符。 |
+
+### Bring your own template
+
+Pandoc-style: hand a styled `.docx` to Folio and your output adopts its styles wholesale.
+
+```bash
+scribe-cli paper.md --reference-doc thesis-template.docx -o paper.docx
+```
+
+```python
+folio.convert(md, reference_doc="thesis-template.docx")
+```
+
+Anything you can do in Word — fonts, colors, paragraph spacing, table styles, list bullets — flows through verbatim. Open the template in Word, edit the styles, save, and Folio's next run picks them up. `--reference-doc` and `--theme` are mutually exclusive.
+
 ## Why Folio
 
 Most Markdown-to-DOCX workflows break down in the last 10%:

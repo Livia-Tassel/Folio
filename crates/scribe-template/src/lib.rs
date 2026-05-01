@@ -70,10 +70,16 @@ impl Template {
     }
 }
 
-const BUILTIN_THEMES: &[(&str, &str)] = &[(
-    "academic",
-    include_str!("../themes/academic.styles.xml"),
-)];
+const BUILTIN_THEMES: &[(&str, &str)] = &[
+    (
+        "academic",
+        include_str!("../themes/academic.styles.xml"),
+    ),
+    (
+        "thesis-cn",
+        include_str!("../themes/thesis-cn.styles.xml"),
+    ),
+];
 
 /// Names of themes that [`Template::builtin`] understands.
 pub fn list_builtin_themes() -> Vec<&'static str> {
@@ -218,5 +224,28 @@ mod tests {
             names.contains(&"academic"),
             "expected 'academic' in list_builtin_themes(); got {names:?}"
         );
+    }
+
+    #[test]
+    fn builtin_thesis_cn_theme_loads_and_uses_chinese_fonts() {
+        // The "thesis-cn" theme is the Chinese-language counterpart to
+        // "academic": 宋体 body, 黑体 headings, 1.5 line height, 2-char
+        // first-line indent. The contract: it loads, and its eastAsia
+        // run fonts reference 宋体 (SimSun) somewhere.
+        let t = Template::builtin("thesis-cn").unwrap();
+        let xml = t.styles_xml();
+        assert!(
+            xml.contains("宋体") || xml.contains("SimSun"),
+            "thesis-cn theme styles should reference 宋体 / SimSun; got: {xml}"
+        );
+        assert!(
+            xml.contains("黑体") || xml.contains("SimHei"),
+            "thesis-cn theme styles should reference 黑体 / SimHei for headings; got: {xml}"
+        );
+    }
+
+    #[test]
+    fn list_builtin_themes_includes_thesis_cn() {
+        assert!(list_builtin_themes().contains(&"thesis-cn"));
     }
 }

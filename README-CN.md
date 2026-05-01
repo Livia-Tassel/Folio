@@ -82,6 +82,44 @@ html = folio.preview_html("# 标题\n\n正文")
 
 Wheel 标签是 `cp38-abi3`——一份下载即可覆盖 CPython 3.8+ 的所有版本，平台覆盖 macOS（Apple Silicon + Intel）、Linux x86_64 + aarch64、Windows x64。转换全程在 Rust 里完成；`convert()` 主动释放 GIL，多线程并发渲染不会卡。
 
+## 模板
+
+输出文件的字体、字号、标题层级、代码样式、段落间距，全部来自 Word 的*样式表*。Folio 内置了常见场景的主题，也接受你自己的参考 `.docx`。
+
+### 内置主题
+
+```bash
+# 按名字选主题，--list-themes 列出所有内置主题
+scribe-cli paper.md --theme academic   -o paper.docx
+scribe-cli paper.md --theme thesis-cn  -o paper.docx
+scribe-cli --list-themes
+```
+
+```python
+import folio
+folio.convert(md, theme="thesis-cn")
+folio.list_themes()  # ["academic", "thesis-cn"]
+```
+
+| 主题 | 适用场景 |
+|---|---|
+| `academic` | 英文学术论文。Times New Roman 12pt 正文，1.5 倍行距，经典标题层级。 |
+| `thesis-cn` | 中文学位论文。宋体正文 + 黑体标题，1.5 倍行距，首行缩进 2 字符。 |
+
+### 自带模板
+
+Pandoc 风格：交给 Folio 一份排好版的 `.docx`，输出全盘继承它的样式。
+
+```bash
+scribe-cli paper.md --reference-doc thesis-template.docx -o paper.docx
+```
+
+```python
+folio.convert(md, reference_doc="thesis-template.docx")
+```
+
+字体、颜色、段距、表格样式、列表项目符号——只要在 Word 里能做的事，都能照搬过来。在 Word 里改完样式保存，Folio 下次运行直接生效。`--reference-doc` 和 `--theme` 不能同时使用。
+
 ## 为什么做 Folio
 
 很多 Markdown 转 DOCX 的流程最后都会卡在“最后 10%”：

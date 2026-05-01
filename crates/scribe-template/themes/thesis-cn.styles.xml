@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+          xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
+          mc:Ignorable="w14">
+  <!--
+    Folio "thesis-cn" theme — 中文学术论文标准风格.
+    宋体正文 + 黑体标题 + 首行缩进 2 字符 + 1.5 倍行距.
+    设计目标：开箱即满足国内本科 / 硕士 / 博士论文常见格式要求的最大公约数,
+    个别学校的细节（封面、章节分隔、目录页码）请在 Word 中再行调整.
+  -->
+
+  <w:docDefaults>
+    <w:rPrDefault>
+      <w:rPr>
+        <w:rFonts w:ascii="Times New Roman"
+                  w:hAnsi="Times New Roman"
+                  w:cs="Times New Roman"
+                  w:eastAsia="宋体"/>
+        <w:sz w:val="24"/>
+        <w:szCs w:val="24"/>
+        <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+      </w:rPr>
+    </w:rPrDefault>
+    <w:pPrDefault>
+      <w:pPr>
+        <w:spacing w:line="360" w:lineRule="auto" w:after="0"/>
+        <w:ind w:firstLineChars="200" w:firstLine="480"/>
+      </w:pPr>
+    </w:pPrDefault>
+  </w:docDefaults>
+
+  <w:style w:type="paragraph" w:styleId="Normal" w:default="1">
+    <w:name w:val="Normal"/>
+    <w:qFormat/>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading1">
+    <w:name w:val="Heading 1"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="480" w:after="240" w:line="360" w:lineRule="auto"/>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:jc w:val="center"/>
+      <w:outlineLvl w:val="0"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="黑体"/>
+      <w:b/>
+      <w:bCs/>
+      <w:sz w:val="36"/>
+      <w:szCs w:val="36"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading2">
+    <w:name w:val="Heading 2"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="360" w:after="180" w:line="360" w:lineRule="auto"/>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:outlineLvl w:val="1"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="黑体"/>
+      <w:b/>
+      <w:bCs/>
+      <w:sz w:val="32"/>
+      <w:szCs w:val="32"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading3">
+    <w:name w:val="Heading 3"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="240" w:after="120" w:line="360" w:lineRule="auto"/>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:outlineLvl w:val="2"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="黑体"/>
+      <w:b/>
+      <w:bCs/>
+      <w:sz w:val="28"/>
+      <w:szCs w:val="28"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading4">
+    <w:name w:val="Heading 4"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="200" w:after="100" w:line="360" w:lineRule="auto"/>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:outlineLvl w:val="3"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="黑体"/>
+      <w:b/>
+      <w:bCs/>
+      <w:sz w:val="24"/>
+      <w:szCs w:val="24"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading5">
+    <w:name w:val="Heading 5"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="160" w:after="80" w:line="360" w:lineRule="auto"/>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:outlineLvl w:val="4"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="黑体"/>
+      <w:b/>
+      <w:bCs/>
+      <w:sz w:val="24"/>
+      <w:szCs w:val="24"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading6">
+    <w:name w:val="Heading 6"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="160" w:after="80" w:line="360" w:lineRule="auto"/>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:outlineLvl w:val="5"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="黑体"/>
+      <w:b/>
+      <w:bCs/>
+      <w:i/>
+      <w:iCs/>
+      <w:sz w:val="24"/>
+      <w:szCs w:val="24"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Quote">
+    <w:name w:val="Quote"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:pPr>
+      <w:ind w:left="640" w:right="640" w:firstLineChars="0" w:firstLine="0"/>
+      <w:spacing w:before="120" w:after="120"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:eastAsia="楷体"/>
+      <w:i/>
+      <w:iCs/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="SourceCode">
+    <w:name w:val="Source Code"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="SourceCode"/>
+    <w:pPr>
+      <w:spacing w:line="276" w:lineRule="auto" w:before="60" w:after="60"/>
+      <w:ind w:left="240" w:firstLineChars="0" w:firstLine="0"/>
+      <w:shd w:val="clear" w:color="auto" w:fill="F4F4F4"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas" w:eastAsia="PingFang SC"/>
+      <w:sz w:val="20"/>
+      <w:szCs w:val="20"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="character" w:styleId="InlineCode">
+    <w:name w:val="Inline Code"/>
+    <w:rPr>
+      <w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas" w:eastAsia="PingFang SC"/>
+      <w:sz w:val="20"/>
+      <w:szCs w:val="20"/>
+      <w:shd w:val="clear" w:color="auto" w:fill="F0F0F0"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="TableHeader">
+    <w:name w:val="Table Header"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:pPr>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:jc w:val="center"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:eastAsia="黑体"/>
+      <w:b/>
+      <w:bCs/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="HorizontalRule">
+    <w:name w:val="Horizontal Rule"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:pPr>
+      <w:ind w:firstLineChars="0" w:firstLine="0"/>
+      <w:pBdr>
+        <w:top w:val="single" w:sz="6" w:space="1" w:color="999999"/>
+      </w:pBdr>
+    </w:pPr>
+  </w:style>
+</w:styles>
