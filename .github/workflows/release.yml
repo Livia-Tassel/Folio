@@ -32,10 +32,10 @@ jobs:
             os: macos-14
             args: --target aarch64-apple-darwin
             rust_targets: aarch64-apple-darwin
-          - name: macOS Intel
-            os: macos-13
-            args: --target x86_64-apple-darwin
-            rust_targets: x86_64-apple-darwin
+          # macOS Intel (macos-13) intentionally omitted — GitHub-hosted
+          # Intel runners are billed 10x and exhaust the free macOS quota
+          # quickly. Apple Silicon coverage handles the dominant share of
+          # current Macs; re-add when budget allows.
           - name: Windows x64
             os: windows-2022
             args: -b nsis

@@ -61,8 +61,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64
-            runner: macos-13
+          # macos-13 (Intel) is intentionally omitted — GitHub-hosted Intel
+          # macOS minutes are billed 10x and our free quota runs dry quickly.
+          # Apple Silicon (macos-14) builds an arm64 wheel; Intel Mac users
+          # can install via the source distribution (sdist) until we re-add
+          # macos-13 if the budget allows.
           - target: aarch64
             runner: macos-14
     steps:
@@ -137,8 +140,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             artifact: wheels-linux-x86_64
-          - os: macos-13
-            artifact: wheels-macos-x86_64
+          # macos-13 (Intel) test omitted — see note on the build matrix.
           - os: macos-14
             artifact: wheels-macos-aarch64
           - os: windows-latest
