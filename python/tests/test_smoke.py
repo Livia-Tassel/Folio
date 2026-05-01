@@ -180,3 +180,51 @@ def test_reference_doc_and_theme_together_is_an_error(tmp_path: Path) -> None:
     _build_minimal_reference_docx("<w:styles/>", ref)
     with pytest.raises(ValueError):
         folio.convert("# hi", reference_doc=str(ref), theme="academic")
+
+
+def _build_reference_with_section(
+    styles_xml: str,
+    document_xml: str,
+    dest: Path,
+) -> Path:
+    """Pack a docx-like archive with both styles.xml and document.xml.
+    Used to test that page setup (sectPr) propagates from the reference."""
+    import zipfile
+
+    with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("word/styles.xml", styles_xml)
+        z.writestr("word/document.xml", document_xml)
+    return dest
+
+
+def test_reference_doc_inherits_page_setup(tmp_path: Path) -> None:
+    # Sentinel margin (7777 twips) — must show up in the output.
+    document_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">\n'
+        '  <w:body>\n'
+        '    <w:p><w:r><w:t>body</w:t></w:r></w:p>\n'
+        '    <w:sectPr>'
+        '<w:pgSz w:w="9999" w:h="9999"/>'
+        '<w:pgMar w:top="7777" w:right="0" w:bottom="0" w:left="0" '
+        'w:header="0" w:footer="0" w:gutter="0"/>'
+        '</w:sectPr>\n'
+        '  </w:body>\n'
+        '</w:document>'
+    )
+    ref = _build_reference_with_section(
+        "<w:styles/>",
+        document_xml,
+        tmp_path / "ref.docx",
+    )
+
+    out = folio.convert("# title\n\nbody.", reference_doc=str(ref))
+
+    import io
+    import zipfile
+
+    with zipfile.ZipFile(io.BytesIO(out)) as z:
+        document = z.read("word/document.xml").decode("utf-8")
+    assert 'w:top="7777"' in document, (
+        f"expected reference sectPr's sentinel margin to propagate; got: {document}"
+    )

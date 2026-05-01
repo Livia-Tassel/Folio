@@ -26,6 +26,15 @@ aspiration into a one-flag operation.
   - `scribe-cli --list-themes` — enumerate built-in themes.
   These are mutually exclusive and surface clear errors when both
   are given.
+- **Page-setup inheritance from reference docs.** When you supply
+  a `--reference-doc`, Folio now also lifts the body-terminating
+  `<w:sectPr>` out of the reference's `word/document.xml` and
+  splices it into the output. Page margins, paper size, columns,
+  headers/footers anchors all flow through with the styles, so a
+  reference designed for A5 with custom margins actually produces
+  A5 output with custom margins. Built-in themes do not carry a
+  sectPr — they only override styles, leaving Folio's default page
+  setup intact.
 - **Built-in themes.** Two themes ship with 0.2.0, baked into the
   binary at compile time so every install carries them:
   - `academic` — Times New Roman 12pt body, 1.5 line height,
@@ -42,13 +51,14 @@ aspiration into a one-flag operation.
 - **`scribe_template::Template`** public API:
   `from_reference_doc(path)`, `from_reference_doc_bytes(bytes)`,
   `from_styles_xml(xml)`, `builtin(name)`, plus
-  `list_builtin_themes()` for discovery.
+  `list_builtin_themes()` for discovery. `section_xml()` exposes
+  the lifted page setup for callers that want it.
 - **`scribe_docx::EmitOptions`** master entry. The previous
   `emit` and `emit_with_base` are now thin wrappers; new callers
   use `emit_with_options(doc, opts)` and threaded a
-  `styles_xml_override` through to a generic
-  `postprocess_styles` zip pass that mirrors the existing math
-  postprocess pattern.
+  `styles_xml_override` and `section_xml_override` through to
+  generic `postprocess_styles` / `postprocess_section` zip passes
+  that mirror the existing math postprocess pattern.
 - **`scribe_core::convert_*_with_template`** entry points; new
   `ConvertError::Template` variant routes loader errors with
   helpful context.
@@ -61,8 +71,9 @@ aspiration into a one-flag operation.
 
 ### Tests
 
-- Rust workspace: 98 tests, all green.
-- Python: 15 tests, all green (8 from 0.1.4 + 7 new for templates).
+- Rust workspace: 102 tests, all green.
+- Python: 16 tests, all green (8 from 0.1.4 + 8 new for templates +
+  page setup).
 - Mutation-tested critical match arms in `scribe-template` to
   confirm tests guard the intended branches.
 - CI workflow `python.yml` (added in 0.1.4) builds wheels on

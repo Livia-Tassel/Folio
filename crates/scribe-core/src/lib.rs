@@ -39,6 +39,7 @@ pub fn convert_string_with_template(
         scribe_docx::EmitOptions {
             base_dir: None,
             styles_xml_override: template.map(|t| t.styles_xml()),
+            section_xml_override: template.and_then(|t| t.section_xml()),
         },
     )
     .map_err(ConvertError::Emit)
@@ -60,6 +61,7 @@ pub fn convert_file_with_template(
         scribe_docx::EmitOptions {
             base_dir: base,
             styles_xml_override: template.map(|t| t.styles_xml()),
+            section_xml_override: template.and_then(|t| t.section_xml()),
         },
     )
     .map_err(ConvertError::Emit)?;
@@ -133,6 +135,50 @@ mod tests {
         assert!(
             buf.contains(sentinel),
             "expected output styles.xml to carry sentinel; got: {buf}"
+        );
+    }
+
+    #[test]
+    fn convert_string_with_template_inherits_page_setup() {
+        // End-to-end: a reference doc whose document.xml has a custom
+        // sectPr (sentinel margin) — the converted output must carry
+        // that sentinel margin too.
+        let styles_xml = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>body</w:t></w:r></w:p>
+    <w:sectPr><w:pgSz w:w="9999" w:h="9999"/><w:pgMar w:top="7777" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>
+  </w:body>
+</w:document>"#;
+
+        let mut docx_bytes = Vec::new();
+        {
+            use std::io::Write as _;
+            let cursor = std::io::Cursor::new(&mut docx_bytes);
+            let mut zip = zip::ZipWriter::new(cursor);
+            let opts = zip::write::SimpleFileOptions::default();
+            zip.start_file("word/styles.xml", opts).unwrap();
+            zip.write_all(styles_xml.as_bytes()).unwrap();
+            zip.start_file("word/document.xml", opts).unwrap();
+            zip.write_all(document_xml.as_bytes()).unwrap();
+            zip.finish().unwrap();
+        }
+
+        let template = Template::from_reference_doc_bytes(&docx_bytes).unwrap();
+        let out = convert_string_with_template("# Hi\n\nbody.", Some(&template)).unwrap();
+
+        let cursor = std::io::Cursor::new(&out);
+        let mut z = zip::ZipArchive::new(cursor).unwrap();
+        let mut buf = String::new();
+        use std::io::Read as _;
+        z.by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut buf)
+            .unwrap();
+        assert!(
+            buf.contains(r#"w:top="7777""#),
+            "expected sentinel margin propagated to output; got: {buf}"
         );
     }
 }

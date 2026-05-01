@@ -12,12 +12,14 @@ use std::io::{Cursor, Read};
 use std::path::Path;
 
 const STYLES_PATH: &str = "word/styles.xml";
+const DOCUMENT_PATH: &str = "word/document.xml";
 
 /// A loaded reference template. Currently exposes only the raw `styles.xml`
 /// content; later cycles will add `theme1.xml` and `numbering.xml`.
 #[derive(Debug, Clone)]
 pub struct Template {
     styles_xml: String,
+    section_xml: Option<String>,
 }
 
 impl Template {
@@ -34,8 +36,27 @@ impl Template {
         let mut buf = Vec::with_capacity(entry.size() as usize);
         entry.read_to_end(&mut buf).map_err(TemplateError::Read)?;
         let styles_xml = String::from_utf8(buf).map_err(TemplateError::Utf8)?;
+        drop(entry);
 
-        Ok(Self { styles_xml })
+        // word/document.xml is optional — a styles-only fragment is still
+        // a valid reference.
+        let section_xml = match zip.by_name(DOCUMENT_PATH) {
+            Ok(mut doc_entry) => {
+                let mut doc_buf = Vec::with_capacity(doc_entry.size() as usize);
+                doc_entry
+                    .read_to_end(&mut doc_buf)
+                    .map_err(TemplateError::Read)?;
+                let doc_xml = String::from_utf8(doc_buf).map_err(TemplateError::Utf8)?;
+                extract_section_pr(&doc_xml)
+            }
+            Err(zip::result::ZipError::FileNotFound) => None,
+            Err(other) => return Err(TemplateError::Zip(other)),
+        };
+
+        Ok(Self {
+            styles_xml,
+            section_xml,
+        })
     }
 
     /// Load a template from a `.docx` file on disk.
@@ -50,6 +71,7 @@ impl Template {
     pub fn from_styles_xml(xml: impl Into<String>) -> Self {
         Self {
             styles_xml: xml.into(),
+            section_xml: None,
         }
     }
 
@@ -68,6 +90,29 @@ impl Template {
     pub fn styles_xml(&self) -> &str {
         &self.styles_xml
     }
+
+    /// Page setup (`<w:sectPr>...</w:sectPr>`) lifted from the reference
+    /// doc's `word/document.xml`. `None` when the reference has no document
+    /// part or no sectPr inside it (built-in themes never carry one).
+    pub fn section_xml(&self) -> Option<&str> {
+        self.section_xml.as_deref()
+    }
+}
+
+/// Find the last `<w:sectPr ...>...</w:sectPr>` element in `document.xml`.
+/// In OOXML the body's terminating sectPr describes the page setup of the
+/// (final) section, which is what we want to inherit. A document can also
+/// have per-paragraph sectPr inside `<w:pPr>` for section breaks; we treat
+/// the last one as the canonical "page setup" the user authored.
+fn extract_section_pr(document_xml: &str) -> Option<String> {
+    let close_tag = "</w:sectPr>";
+    let close_idx = document_xml.rfind(close_tag)?;
+    // Search backwards for the matching opening tag. Accept both
+    // `<w:sectPr>` and `<w:sectPr ...>` (with attributes).
+    let head = &document_xml[..close_idx];
+    let open_idx = head.rfind("<w:sectPr")?;
+    let end_idx = close_idx + close_tag.len();
+    Some(document_xml[open_idx..end_idx].to_string())
 }
 
 const BUILTIN_THEMES: &[(&str, &str)] = &[
@@ -247,5 +292,57 @@ mod tests {
     #[test]
     fn list_builtin_themes_includes_thesis_cn() {
         assert!(list_builtin_themes().contains(&"thesis-cn"));
+    }
+
+    #[test]
+    fn extracts_section_pr_from_reference_doc_document_xml() {
+        // Pandoc-style page-setup inheritance: sectPr lives inside the
+        // body of word/document.xml; we lift it out so emit can swap it
+        // into the output. Build a minimal docx whose document.xml has
+        // a sectPr with a recognizable margin value, then verify
+        // Template::section_xml() returns that same sectPr.
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>body</w:t></w:r></w:p>
+    <w:sectPr><w:pgSz w:w="9999" w:h="9999"/><w:pgMar w:top="7777" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>
+  </w:body>
+</w:document>"#;
+        let styles_xml = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+
+        let mut buf = Vec::new();
+        {
+            let cursor = std::io::Cursor::new(&mut buf);
+            let mut zip = zip::ZipWriter::new(cursor);
+            let opts: SimpleFileOptions = SimpleFileOptions::default();
+            zip.start_file("word/styles.xml", opts).unwrap();
+            zip.write_all(styles_xml.as_bytes()).unwrap();
+            zip.start_file("word/document.xml", opts).unwrap();
+            zip.write_all(document_xml.as_bytes()).unwrap();
+            zip.finish().unwrap();
+        }
+
+        let template = Template::from_reference_doc_bytes(&buf).unwrap();
+
+        let section = template
+            .section_xml()
+            .expect("expected sectPr to be extracted");
+        assert!(
+            section.contains(r#"w:top="7777""#),
+            "expected our sentinel margin in extracted sectPr; got: {section}"
+        );
+        // The extracted snippet should be a complete <w:sectPr>...</w:sectPr> element.
+        assert!(section.starts_with("<w:sectPr"), "got: {section}");
+        assert!(section.ends_with("</w:sectPr>"), "got: {section}");
+    }
+
+    #[test]
+    fn section_xml_is_none_when_reference_has_no_sect_pr() {
+        // Some minimal docs (or ours from earlier tests) have no sectPr.
+        // Template::section_xml() must report that cleanly rather than
+        // panicking or returning a malformed snippet.
+        let bytes = build_minimal_docx("<w:styles/>"); // no document.xml at all
+        let t = Template::from_reference_doc_bytes(&bytes).unwrap();
+        assert_eq!(t.section_xml(), None);
     }
 }

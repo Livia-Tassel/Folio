@@ -58,6 +58,10 @@ pub struct EmitOptions<'a> {
     /// If set, the output's `word/styles.xml` is replaced byte-for-byte
     /// with this content. Used to honour a reference template's styles.
     pub styles_xml_override: Option<&'a str>,
+    /// If set, the output's body-final `<w:sectPr>...</w:sectPr>` is
+    /// replaced with this snippet. Used to honour a reference template's
+    /// page setup (margins, paper size, columns).
+    pub section_xml_override: Option<&'a str>,
 }
 
 /// Master emit entry. The other `emit*` functions are thin wrappers.
@@ -89,6 +93,11 @@ pub fn emit_with_options(doc: &Document, opts: EmitOptions<'_>) -> anyhow::Resul
 
     let buf = match opts.styles_xml_override {
         Some(xml) => postprocess_styles(&buf, xml)?,
+        None => buf,
+    };
+
+    let buf = match opts.section_xml_override {
+        Some(xml) => postprocess_section(&buf, xml)?,
         None => buf,
     };
 
@@ -1184,6 +1193,40 @@ mod tests {
             "default emit must include built-in styles; got: {styles}"
         );
     }
+
+    #[test]
+    fn emit_with_options_replaces_section_pr_when_override_supplied() {
+        // Reference-doc page setup inheritance: when section_xml_override
+        // is supplied, the output's word/document.xml carries that exact
+        // sectPr instead of the docx-rs default. We use a recognisable
+        // sentinel margin so the assertion can't accidentally pass on
+        // the default.
+        let custom_section = r#"<w:sectPr><w:pgSz w:w="9999" w:h="9999"/><w:pgMar w:top="7777" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>"#;
+
+        let doc = doc_from(vec![Block::Paragraph {
+            content: vec![Inline::Text("body".into())],
+        }]);
+
+        let bytes = emit_with_options(
+            &doc,
+            EmitOptions {
+                section_xml_override: Some(custom_section),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let document_xml = zip_entry_text(&bytes, "word/document.xml");
+        assert!(
+            document_xml.contains(r#"w:top="7777""#),
+            "expected sentinel margin in output; got: {document_xml}"
+        );
+        // The default A4 sentinel from docx-rs must be gone.
+        assert!(
+            !document_xml.contains(r#"w:top="1985""#),
+            "default A4 margin should have been replaced; got: {document_xml}"
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1260,6 +1303,65 @@ fn postprocess_styles(zip_bytes: &[u8], replacement_xml: &str) -> anyhow::Result
         writer.finish()?;
     }
     Ok(out_buf)
+}
+
+/// Replace the body-terminating `<w:sectPr>...</w:sectPr>` in
+/// `word/document.xml` with `replacement_section`. Used to honour a
+/// reference template's page setup (margins, paper size, columns).
+fn postprocess_section(zip_bytes: &[u8], replacement_section: &str) -> anyhow::Result<Vec<u8>> {
+    let cursor = Cursor::new(zip_bytes);
+    let mut reader = zip::ZipArchive::new(cursor)?;
+
+    let mut out_buf: Vec<u8> = Vec::with_capacity(zip_bytes.len());
+    {
+        let out_cursor = Cursor::new(&mut out_buf);
+        let mut writer = zip::ZipWriter::new(out_cursor);
+
+        for i in 0..reader.len() {
+            let mut entry = reader.by_index(i)?;
+            let name = entry.name().to_string();
+            let opts: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+                .compression_method(entry.compression())
+                .last_modified_time(entry.last_modified().unwrap_or_default());
+
+            if name == "word/document.xml" {
+                let mut data = Vec::with_capacity(entry.size() as usize);
+                entry.read_to_end(&mut data)?;
+                let xml = String::from_utf8(data)
+                    .map_err(|e| anyhow::anyhow!("document.xml is not utf-8: {e}"))?;
+                let replaced = replace_last_section_pr(&xml, replacement_section);
+                writer.start_file(name, opts)?;
+                writer.write_all(replaced.as_bytes())?;
+            } else {
+                let mut data = Vec::with_capacity(entry.size() as usize);
+                entry.read_to_end(&mut data)?;
+                writer.start_file(name, opts)?;
+                writer.write_all(&data)?;
+            }
+        }
+        writer.finish()?;
+    }
+    Ok(out_buf)
+}
+
+/// Replace the last `<w:sectPr>...</w:sectPr>` in a document.xml string
+/// with the supplied snippet. If no sectPr is present the string is
+/// returned unchanged — emit_with_options should not silently insert a
+/// sectPr where docx-rs didn't already place one.
+fn replace_last_section_pr(document_xml: &str, replacement: &str) -> String {
+    let close = "</w:sectPr>";
+    let Some(close_idx) = document_xml.rfind(close) else {
+        return document_xml.to_string();
+    };
+    let head = &document_xml[..close_idx];
+    let Some(open_idx) = head.rfind("<w:sectPr") else {
+        return document_xml.to_string();
+    };
+    let mut out = String::with_capacity(document_xml.len() + replacement.len());
+    out.push_str(&document_xml[..open_idx]);
+    out.push_str(replacement);
+    out.push_str(&document_xml[close_idx + close.len()..]);
+    out
 }
 
 fn replace_math_placeholders(xml: &str, math_map: &HashMap<String, MathReplacement>) -> String {
