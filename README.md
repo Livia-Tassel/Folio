@@ -81,6 +81,30 @@ cargo run -p scribe-cli -- "C:\absolute\path\input.md" -o "C:\absolute\path\outp
 
 You can also omit `-o`, and Folio will write `<input>.docx` next to the source Markdown file.
 
+### Python (preview)
+
+Folio is also published as a Python wheel for users who want to embed the conversion in scripts, notebooks, or pipelines.
+
+```bash
+pip install folio-docx
+```
+
+```python
+import folio
+
+# Markdown string -> .docx bytes
+docx_bytes = folio.convert("# Hello\n\n$E = mc^2$")
+
+# Markdown file -> .docx file (relative image paths are resolved
+# against the input file's parent directory)
+folio.convert_file("paper.md", "paper.docx")
+
+# Live HTML preview
+html = folio.preview_html("# Title\n\nbody")
+```
+
+The wheel ships as `cp38-abi3`, so a single download works on every CPython 3.8+ on macOS (Apple Silicon + Intel), Linux x86_64 + aarch64, and Windows x64. The conversion runs entirely in Rust — `convert()` releases the GIL, so multiple threads can render in parallel.
+
 ## Why Folio
 
 Most Markdown-to-DOCX workflows break down in the last 10%:
