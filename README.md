@@ -128,6 +128,7 @@ folio.list_themes()  # ["academic", "thesis-cn"]
 |---|---|
 | `academic` | English academic paper. Times New Roman 12pt body, 1.5 line height, classic heading hierarchy. |
 | `thesis-cn` | 中文学位论文。宋体正文 + 黑体标题，1.5 倍行距，首行缩进 2 字符。 |
+| `report` | Modern business report. Calibri sans-serif, blue heading accents, tighter line spacing. |
 
 ### Bring your own template
 

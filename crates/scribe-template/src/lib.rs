@@ -104,6 +104,16 @@ impl Template {
 /// (final) section, which is what we want to inherit. A document can also
 /// have per-paragraph sectPr inside `<w:pPr>` for section breaks; we treat
 /// the last one as the canonical "page setup" the user authored.
+///
+/// **Known limitations** (string-based search, not a real XML parser):
+/// - Self-closing `<w:sectPr/>` returns [`None`] — there's nothing
+///   between an empty section's tags to inherit anyway.
+/// - Namespace prefixes other than `w:` are not recognised. Word,
+///   LibreOffice, and WPS all emit `w:`, so this only affects synthetic
+///   inputs.
+/// - A `sectPr` literal that lives inside an XML comment or CDATA
+///   section will be matched as if it were real markup. No mainstream
+///   OOXML producer writes such constructs.
 fn extract_section_pr(document_xml: &str) -> Option<String> {
     let close_tag = "</w:sectPr>";
     let close_idx = document_xml.rfind(close_tag)?;
@@ -118,6 +128,7 @@ fn extract_section_pr(document_xml: &str) -> Option<String> {
 const BUILTIN_THEMES: &[(&str, &str)] = &[
     ("academic", include_str!("../themes/academic.styles.xml")),
     ("thesis-cn", include_str!("../themes/thesis-cn.styles.xml")),
+    ("report", include_str!("../themes/report.styles.xml")),
 ];
 
 /// Names of themes that [`Template::builtin`] understands.
@@ -289,6 +300,21 @@ mod tests {
     }
 
     #[test]
+    fn builtin_report_theme_loads_and_uses_calibri() {
+        let t = Template::builtin("report").unwrap();
+        let xml = t.styles_xml();
+        assert!(
+            xml.contains("Calibri"),
+            "report theme should reference Calibri; got: {xml}"
+        );
+    }
+
+    #[test]
+    fn list_builtin_themes_includes_report() {
+        assert!(list_builtin_themes().contains(&"report"));
+    }
+
+    #[test]
     fn extracts_section_pr_from_reference_doc_document_xml() {
         // Pandoc-style page-setup inheritance: sectPr lives inside the
         // body of word/document.xml; we lift it out so emit can swap it
@@ -339,5 +365,31 @@ mod tests {
         let bytes = build_minimal_docx("<w:styles/>"); // no document.xml at all
         let t = Template::from_reference_doc_bytes(&bytes).unwrap();
         assert_eq!(t.section_xml(), None);
+    }
+
+    #[test]
+    fn extract_section_pr_returns_none_for_self_closing_sect_pr() {
+        // Word writes `<w:sectPr/>` for empty sections. There's nothing
+        // inside to inherit, so we deliberately return None — better
+        // than substituting an empty page-setup snippet that would
+        // confuse Word.
+        let xml = r#"<w:document><w:body><w:p/><w:sectPr/></w:body></w:document>"#;
+        assert_eq!(extract_section_pr(xml), None);
+    }
+
+    #[test]
+    fn extract_section_pr_picks_the_last_sect_pr_in_body() {
+        // Multi-section docs have intermediate `<w:pPr><w:sectPr>` for
+        // section breaks. Pandoc's convention — and ours — is to treat
+        // the body-terminating sectPr as the canonical page setup. This
+        // test locks that in.
+        let xml = r#"<w:document><w:body>
+<w:p><w:pPr><w:sectPr><w:pgMar w:top="1111"/></w:sectPr></w:pPr></w:p>
+<w:p>second</w:p>
+<w:sectPr><w:pgMar w:top="2222"/></w:sectPr>
+</w:body></w:document>"#;
+        let extracted = extract_section_pr(xml).unwrap();
+        assert!(extracted.contains(r#"w:top="2222""#), "got {extracted}");
+        assert!(!extracted.contains(r#"w:top="1111""#), "got {extracted}");
     }
 }

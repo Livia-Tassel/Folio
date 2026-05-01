@@ -35,13 +35,15 @@ aspiration into a one-flag operation.
   A5 output with custom margins. Built-in themes do not carry a
   sectPr — they only override styles, leaving Folio's default page
   setup intact.
-- **Built-in themes.** Two themes ship with 0.2.0, baked into the
+- **Built-in themes.** Three themes ship with 0.2.0, baked into the
   binary at compile time so every install carries them:
   - `academic` — Times New Roman 12pt body, 1.5 line height,
     classic English academic-paper hierarchy.
   - `thesis-cn` — 宋体 正文 + 黑体 标题 + 1.5 倍行距 + 首行缩进
     2 字符. Targets the largest defensible default for Chinese
     学位论文.
+  - `report` — Calibri sans-serif, blue heading accents, tighter
+    line spacing. For status updates, one-pagers, internal memos.
 - **Python parity.** The same controls reach Python:
   - `folio.convert(md, theme="academic")`
   - `folio.convert(md, reference_doc="my-template.docx")`

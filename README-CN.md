@@ -105,6 +105,7 @@ folio.list_themes()  # ["academic", "thesis-cn"]
 |---|---|
 | `academic` | 英文学术论文。Times New Roman 12pt 正文，1.5 倍行距，经典标题层级。 |
 | `thesis-cn` | 中文学位论文。宋体正文 + 黑体标题，1.5 倍行距，首行缩进 2 字符。 |
+| `report` | 现代商务报告。Calibri 无衬线，标题蓝色点缀，行距更紧凑。 |
 
 ### 自带模板
 

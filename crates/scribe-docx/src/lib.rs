@@ -1348,6 +1348,13 @@ fn postprocess_section(zip_bytes: &[u8], replacement_section: &str) -> anyhow::R
 /// with the supplied snippet. If no sectPr is present the string is
 /// returned unchanged — emit_with_options should not silently insert a
 /// sectPr where docx-rs didn't already place one.
+///
+/// **Known limitations** (string-based, not a real XML parser):
+/// - Mirrors the limits of `scribe_template::extract_section_pr`:
+///   self-closing `<w:sectPr/>` is not matched, namespaces other than
+///   `w:` are not recognised, and a literal `<w:sectPr>` inside a comment
+///   or CDATA would be substituted. None of these occur in real Word /
+///   LibreOffice / WPS output.
 fn replace_last_section_pr(document_xml: &str, replacement: &str) -> String {
     let close = "</w:sectPr>";
     let Some(close_idx) = document_xml.rfind(close) else {

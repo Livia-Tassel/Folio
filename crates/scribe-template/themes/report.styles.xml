@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+          xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
+          mc:Ignorable="w14">
+  <!--
+    Folio "report" theme — modern business report.
+    Calibri sans-serif body, blue accents on headings, tighter line
+    spacing than the academic theme. Designed for status updates,
+    one-pagers, internal memos — situations where a serif "paper" feel
+    would be wrong but you still want something more typographic than
+    the Word default.
+  -->
+
+  <w:docDefaults>
+    <w:rPrDefault>
+      <w:rPr>
+        <w:rFonts w:ascii="Calibri"
+                  w:hAnsi="Calibri"
+                  w:cs="Calibri"
+                  w:eastAsia="Microsoft YaHei"/>
+        <w:sz w:val="22"/>
+        <w:szCs w:val="22"/>
+        <w:lang w:val="en-US"/>
+      </w:rPr>
+    </w:rPrDefault>
+    <w:pPrDefault>
+      <w:pPr>
+        <w:spacing w:line="288" w:lineRule="auto" w:after="160"/>
+      </w:pPr>
+    </w:pPrDefault>
+  </w:docDefaults>
+
+  <w:style w:type="paragraph" w:styleId="Normal" w:default="1">
+    <w:name w:val="Normal"/>
+    <w:qFormat/>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading1">
+    <w:name w:val="Heading 1"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="480" w:after="200" w:line="240" w:lineRule="auto"/>
+      <w:outlineLvl w:val="0"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Microsoft YaHei"/>
+      <w:b/>
+      <w:bCs/>
+      <w:color w:val="1F4E79"/>
+      <w:sz w:val="36"/>
+      <w:szCs w:val="36"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading2">
+    <w:name w:val="Heading 2"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="320" w:after="160" w:line="240" w:lineRule="auto"/>
+      <w:outlineLvl w:val="1"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Microsoft YaHei"/>
+      <w:b/>
+      <w:bCs/>
+      <w:color w:val="2E74B5"/>
+      <w:sz w:val="28"/>
+      <w:szCs w:val="28"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading3">
+    <w:name w:val="Heading 3"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="240" w:after="120" w:line="240" w:lineRule="auto"/>
+      <w:outlineLvl w:val="2"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Microsoft YaHei"/>
+      <w:b/>
+      <w:bCs/>
+      <w:color w:val="2E74B5"/>
+      <w:sz w:val="24"/>
+      <w:szCs w:val="24"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading4">
+    <w:name w:val="Heading 4"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="200" w:after="100" w:line="240" w:lineRule="auto"/>
+      <w:outlineLvl w:val="3"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Microsoft YaHei"/>
+      <w:b/>
+      <w:bCs/>
+      <w:color w:val="595959"/>
+      <w:sz w:val="22"/>
+      <w:szCs w:val="22"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading5">
+    <w:name w:val="Heading 5"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="160" w:after="80" w:line="240" w:lineRule="auto"/>
+      <w:outlineLvl w:val="4"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Microsoft YaHei"/>
+      <w:b/>
+      <w:bCs/>
+      <w:color w:val="595959"/>
+      <w:sz w:val="22"/>
+      <w:szCs w:val="22"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Heading6">
+    <w:name w:val="Heading 6"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:keepNext/>
+      <w:spacing w:before="160" w:after="80" w:line="240" w:lineRule="auto"/>
+      <w:outlineLvl w:val="5"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Microsoft YaHei"/>
+      <w:b/>
+      <w:bCs/>
+      <w:i/>
+      <w:iCs/>
+      <w:color w:val="808080"/>
+      <w:sz w:val="22"/>
+      <w:szCs w:val="22"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="Quote">
+    <w:name w:val="Quote"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:pPr>
+      <w:ind w:left="480" w:right="480"/>
+      <w:spacing w:before="120" w:after="120"/>
+      <w:pBdr>
+        <w:left w:val="single" w:sz="12" w:space="6" w:color="2E74B5"/>
+      </w:pBdr>
+    </w:pPr>
+    <w:rPr>
+      <w:i/>
+      <w:iCs/>
+      <w:color w:val="595959"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="SourceCode">
+    <w:name w:val="Source Code"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="SourceCode"/>
+    <w:pPr>
+      <w:spacing w:line="260" w:lineRule="auto" w:before="60" w:after="60"/>
+      <w:ind w:left="240"/>
+      <w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas" w:eastAsia="PingFang SC"/>
+      <w:sz w:val="20"/>
+      <w:szCs w:val="20"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="character" w:styleId="InlineCode">
+    <w:name w:val="Inline Code"/>
+    <w:rPr>
+      <w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas" w:eastAsia="PingFang SC"/>
+      <w:sz w:val="20"/>
+      <w:szCs w:val="20"/>
+      <w:shd w:val="clear" w:color="auto" w:fill="EFEFEF"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="TableHeader">
+    <w:name w:val="Table Header"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:rPr>
+      <w:b/>
+      <w:bCs/>
+      <w:color w:val="1F4E79"/>
+    </w:rPr>
+  </w:style>
+
+  <w:style w:type="paragraph" w:styleId="HorizontalRule">
+    <w:name w:val="Horizontal Rule"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:pPr>
+      <w:pBdr>
+        <w:top w:val="single" w:sz="6" w:space="1" w:color="BFBFBF"/>
+      </w:pBdr>
+    </w:pPr>
+  </w:style>
+</w:styles>
