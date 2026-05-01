@@ -3248,11 +3248,11 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scribe-ast"
-version = "0.1.3"
+version = "0.1.4"
 
 [[package]]
 name = "scribe-cli"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "scribe-core",
@@ -3260,7 +3260,7 @@ dependencies = [
 
 [[package]]
 name = "scribe-core"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "scribe-docx",
@@ -3272,7 +3272,7 @@ dependencies = [
 
 [[package]]
 name = "scribe-docx"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "docx-rs",
@@ -3285,14 +3285,14 @@ dependencies = [
 
 [[package]]
 name = "scribe-highlight"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "syntect",
 ]
 
 [[package]]
 name = "scribe-images"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "image",
  "resvg",
@@ -3301,7 +3301,7 @@ dependencies = [
 
 [[package]]
 name = "scribe-math"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "latex2mathml",
  "quick-xml 0.36.2",
@@ -3310,7 +3310,7 @@ dependencies = [
 
 [[package]]
 name = "scribe-parser"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "pulldown-cmark",
  "scribe-ast",
@@ -3318,14 +3318,14 @@ dependencies = [
 
 [[package]]
 name = "scribe-preview"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "scribe-ast",
 ]
 
 [[package]]
 name = "scribe-py"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "pyo3",
  "scribe-core",
@@ -3333,7 +3333,7 @@ dependencies = [
 
 [[package]]
 name = "scribe-tauri"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "scribe-core",
  "serde",
@@ -3344,7 +3344,7 @@ dependencies = [
 
 [[package]]
 name = "scribe-template"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "quick-xml 0.36.2",
  "thiserror 2.0.18",
