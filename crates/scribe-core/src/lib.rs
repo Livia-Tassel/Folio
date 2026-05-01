@@ -110,11 +110,8 @@ mod tests {
             use std::io::Write as _;
             let cursor = std::io::Cursor::new(&mut docx_bytes);
             let mut zip = zip::ZipWriter::new(cursor);
-            zip.start_file(
-                "word/styles.xml",
-                zip::write::SimpleFileOptions::default(),
-            )
-            .unwrap();
+            zip.start_file("word/styles.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(custom.as_bytes()).unwrap();
             zip.finish().unwrap();
         }
@@ -143,7 +140,8 @@ mod tests {
         // End-to-end: a reference doc whose document.xml has a custom
         // sectPr (sentinel margin) — the converted output must carry
         // that sentinel margin too.
-        let styles_xml = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+        let styles_xml =
+            r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
         let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>

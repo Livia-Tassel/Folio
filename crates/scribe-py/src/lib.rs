@@ -70,10 +70,8 @@ fn convert_file(
     theme: Option<&str>,
 ) -> PyResult<()> {
     let template = pick_template(reference_doc, theme)?;
-    py.allow_threads(|| {
-        scribe_core::convert_file_with_template(input, output, template.as_ref())
-    })
-    .map_err(map_err)
+    py.allow_threads(|| scribe_core::convert_file_with_template(input, output, template.as_ref()))
+        .map_err(map_err)
 }
 
 /// Render a Markdown string as an HTML preview fragment (no ``<html>`` wrapper).

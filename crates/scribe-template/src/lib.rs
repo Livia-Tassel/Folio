@@ -116,14 +116,8 @@ fn extract_section_pr(document_xml: &str) -> Option<String> {
 }
 
 const BUILTIN_THEMES: &[(&str, &str)] = &[
-    (
-        "academic",
-        include_str!("../themes/academic.styles.xml"),
-    ),
-    (
-        "thesis-cn",
-        include_str!("../themes/thesis-cn.styles.xml"),
-    ),
+    ("academic", include_str!("../themes/academic.styles.xml")),
+    ("thesis-cn", include_str!("../themes/thesis-cn.styles.xml")),
 ];
 
 /// Names of themes that [`Template::builtin`] understands.
@@ -160,8 +154,8 @@ mod tests {
         {
             let cursor = std::io::Cursor::new(&mut buf);
             let mut zip = zip::ZipWriter::new(cursor);
-            let opts: SimpleFileOptions = SimpleFileOptions::default()
-                .compression_method(zip::CompressionMethod::Deflated);
+            let opts: SimpleFileOptions =
+                SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
             zip.start_file("word/styles.xml", opts).unwrap();
             zip.write_all(styles_xml.as_bytes()).unwrap();
             zip.finish().unwrap();
@@ -308,7 +302,8 @@ mod tests {
     <w:sectPr><w:pgSz w:w="9999" w:h="9999"/><w:pgMar w:top="7777" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>
   </w:body>
 </w:document>"#;
-        let styles_xml = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+        let styles_xml =
+            r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
 
         let mut buf = Vec::new();
         {
