@@ -1,0 +1,42 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "folio-docx"
+description = "Markdown to polished .docx output, without the cleanup pass."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+authors = [{ name = "Folio contributors" }]
+keywords = ["markdown", "docx", "word", "latex", "pandoc"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Office/Business :: Office Suites",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/Livia-Tassel/Folio"
+Repository = "https://github.com/Livia-Tassel/Folio"
+
+[tool.maturin]
+manifest-path = "crates/scribe-py/Cargo.toml"
+python-source = "python"
+module-name = "folio._folio"
+features = ["pyo3/extension-module"]
+include = [
+    { path = "python/folio/__init__.pyi", format = "wheel" },
+    { path = "python/folio/py.typed", format = "wheel" },
+]
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]

@@ -34,3 +34,21 @@ fixtures/**/*.docx
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json.example
+
+# Python bindings
+.venv/
+.venv-*/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+wheels/
+# maturin develop drops the cdylib next to the python source
+python/folio/_folio*.so
+python/folio/_folio*.pyd
+python/folio/_folio*.dylib
