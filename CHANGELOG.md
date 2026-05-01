@@ -9,6 +9,68 @@ Python wheels all share one version.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-01
+
+The "branded Word out, no cleanup pass" release. Folio now ships a
+real **template system** that turns the README's tagline from
+aspiration into a one-flag operation.
+
+### Added
+
+- **Template system.** A new `scribe-template` crate loads the
+  styles from a Word reference document and the rest of the pipeline
+  honours them on emit. Three knobs at the user-facing layer:
+  - `scribe-cli paper.md --theme <name>` — pick a built-in theme.
+  - `scribe-cli paper.md --reference-doc <path>` — supply your own
+    styled `.docx`.
+  - `scribe-cli --list-themes` — enumerate built-in themes.
+  These are mutually exclusive and surface clear errors when both
+  are given.
+- **Built-in themes.** Two themes ship with 0.2.0, baked into the
+  binary at compile time so every install carries them:
+  - `academic` — Times New Roman 12pt body, 1.5 line height,
+    classic English academic-paper hierarchy.
+  - `thesis-cn` — 宋体 正文 + 黑体 标题 + 1.5 倍行距 + 首行缩进
+    2 字符. Targets the largest defensible default for Chinese
+    学位论文.
+- **Python parity.** The same controls reach Python:
+  - `folio.convert(md, theme="academic")`
+  - `folio.convert(md, reference_doc="my-template.docx")`
+  - `folio.list_themes()`
+  Updated type stubs, docstrings, and 7 new pytest cases covering
+  theme + reference-doc end-to-end.
+- **`scribe_template::Template`** public API:
+  `from_reference_doc(path)`, `from_reference_doc_bytes(bytes)`,
+  `from_styles_xml(xml)`, `builtin(name)`, plus
+  `list_builtin_themes()` for discovery.
+- **`scribe_docx::EmitOptions`** master entry. The previous
+  `emit` and `emit_with_base` are now thin wrappers; new callers
+  use `emit_with_options(doc, opts)` and threaded a
+  `styles_xml_override` through to a generic
+  `postprocess_styles` zip pass that mirrors the existing math
+  postprocess pattern.
+- **`scribe_core::convert_*_with_template`** entry points; new
+  `ConvertError::Template` variant routes loader errors with
+  helpful context.
+
+### Changed
+
+- README and README-CN gained a "Templates" section right after
+  the Python quick-start, with a side-by-side theme table and
+  CLI/Python examples.
+
+### Tests
+
+- Rust workspace: 98 tests, all green.
+- Python: 15 tests, all green (8 from 0.1.4 + 7 new for templates).
+- Mutation-tested critical match arms in `scribe-template` to
+  confirm tests guard the intended branches.
+- CI workflow `python.yml` (added in 0.1.4) builds wheels on
+  Linux x86_64 + aarch64, macOS x86_64 + aarch64, and Windows x64,
+  installs each wheel on a native runner, and runs the pytest
+  smoke suite — so 0.2.0 ships with the real cross-platform
+  guarantee, not just a green local build.
+
 ## [0.1.4] — 2026-05-01
 
 ### Added
@@ -69,7 +131,8 @@ code blocks, footnotes, page-fit images, GFM tables. Cross-platform
 Tauri 2 desktop shell, SvelteKit live-preview pane, `scribe-cli` for
 headless conversion, CI matrix on macOS, Windows, and Ubuntu.
 
-[Unreleased]: https://github.com/Livia-Tassel/Folio/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/Livia-Tassel/Folio/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Livia-Tassel/Folio/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/Livia-Tassel/Folio/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Livia-Tassel/Folio/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Livia-Tassel/Folio/compare/v0.1.1...v0.1.2
