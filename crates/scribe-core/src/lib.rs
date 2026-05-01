@@ -10,7 +10,7 @@ use std::path::Path;
 pub mod error;
 
 pub use error::{ConvertError, Result};
-pub use scribe_template::Template;
+pub use scribe_template::{list_builtin_themes, Template};
 
 /// Convert a Markdown string to `.docx` bytes. Relative image paths can't
 /// be resolved in string mode; use [`convert_file`] for that.

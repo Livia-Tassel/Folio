@@ -44,10 +44,40 @@ impl Template {
         Self::from_reference_doc_bytes(&bytes)
     }
 
+    /// Construct a [`Template`] directly from a `word/styles.xml` string.
+    /// Useful when the styles are produced by something other than a real
+    /// `.docx` (e.g. a built-in theme baked into the binary).
+    pub fn from_styles_xml(xml: impl Into<String>) -> Self {
+        Self {
+            styles_xml: xml.into(),
+        }
+    }
+
+    /// Load a [`Template`] from a built-in theme name. See
+    /// [`list_builtin_themes`] for the supported names.
+    pub fn builtin(name: &str) -> Result<Self, TemplateError> {
+        for (theme_name, xml) in BUILTIN_THEMES {
+            if *theme_name == name {
+                return Ok(Self::from_styles_xml(*xml));
+            }
+        }
+        Err(TemplateError::UnknownBuiltin(name.to_string()))
+    }
+
     /// Raw `word/styles.xml` content as it appears in the reference doc.
     pub fn styles_xml(&self) -> &str {
         &self.styles_xml
     }
+}
+
+const BUILTIN_THEMES: &[(&str, &str)] = &[(
+    "academic",
+    include_str!("../themes/academic.styles.xml"),
+)];
+
+/// Names of themes that [`Template::builtin`] understands.
+pub fn list_builtin_themes() -> Vec<&'static str> {
+    BUILTIN_THEMES.iter().map(|(name, _)| *name).collect()
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -63,6 +93,9 @@ pub enum TemplateError {
 
     #[error("word/styles.xml is not valid UTF-8: {0}")]
     Utf8(#[source] std::string::FromUtf8Error),
+
+    #[error("unknown built-in theme: {0}")]
+    UnknownBuiltin(String),
 }
 
 #[cfg(test)]
@@ -147,5 +180,43 @@ mod tests {
         let err = Template::from_reference_doc(&path).unwrap_err();
 
         assert!(matches!(err, TemplateError::Read(_)), "got {err:?}");
+    }
+
+    #[test]
+    fn from_styles_xml_constructs_template_directly() {
+        let xml = "<w:styles/>";
+        let t = Template::from_styles_xml(xml);
+        assert_eq!(t.styles_xml(), xml);
+    }
+
+    #[test]
+    fn builtin_academic_theme_loads_and_carries_times_new_roman_default() {
+        // The "academic" theme is shipped inside the binary; users get
+        // it via `--theme academic` without supplying any file. The
+        // contract: it loads, and its body font is Times New Roman.
+        let t = Template::builtin("academic").unwrap();
+        let xml = t.styles_xml();
+        assert!(
+            xml.contains("Times New Roman"),
+            "academic theme styles should reference Times New Roman; got: {xml}"
+        );
+    }
+
+    #[test]
+    fn unknown_builtin_theme_returns_unknown_builtin_error() {
+        let err = Template::builtin("definitely-not-a-real-theme-xyz").unwrap_err();
+        assert!(
+            matches!(&err, TemplateError::UnknownBuiltin(name) if name == "definitely-not-a-real-theme-xyz"),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn list_builtin_themes_returns_known_names() {
+        let names = list_builtin_themes();
+        assert!(
+            names.contains(&"academic"),
+            "expected 'academic' in list_builtin_themes(); got {names:?}"
+        );
     }
 }

@@ -150,3 +150,33 @@ def test_convert_with_invalid_reference_doc_raises_value_error(tmp_path: Path) -
 
     with pytest.raises(ValueError):
         folio.convert("# hi", reference_doc=str(bogus))
+
+
+def test_list_themes_includes_academic() -> None:
+    names = folio.list_themes()
+    assert "academic" in names, f"expected 'academic' in {names}"
+
+
+def test_convert_with_builtin_academic_theme() -> None:
+    out = folio.convert("# Hello\n\nbody.", theme="academic")
+    assert out[:2] == b"PK"
+
+    import io
+    import zipfile
+
+    with zipfile.ZipFile(io.BytesIO(out)) as z:
+        styles = z.read("word/styles.xml").decode("utf-8")
+    assert "Times New Roman" in styles
+
+
+def test_unknown_theme_raises_value_error() -> None:
+    with pytest.raises(ValueError):
+        folio.convert("# hi", theme="not-a-real-theme-xyz")
+
+
+def test_reference_doc_and_theme_together_is_an_error(tmp_path: Path) -> None:
+    # Build a minimal reference doc, then try to pass both knobs.
+    ref = tmp_path / "ref.docx"
+    _build_minimal_reference_docx("<w:styles/>", ref)
+    with pytest.raises(ValueError):
+        folio.convert("# hi", reference_doc=str(ref), theme="academic")

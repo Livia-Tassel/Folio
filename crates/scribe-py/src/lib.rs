@@ -22,27 +22,36 @@ fn map_err(e: ConvertError) -> PyErr {
     }
 }
 
-fn load_template(path: Option<&str>) -> PyResult<Option<Template>> {
-    match path {
-        None => Ok(None),
-        Some(p) => Template::from_reference_doc(p)
+fn pick_template(reference_doc: Option<&str>, theme: Option<&str>) -> PyResult<Option<Template>> {
+    match (reference_doc, theme) {
+        (None, None) => Ok(None),
+        (Some(_), Some(_)) => Err(PyValueError::new_err(
+            "reference_doc and theme are mutually exclusive",
+        )),
+        (Some(p), None) => Template::from_reference_doc(p)
             .map(Some)
             .map_err(|e| PyValueError::new_err(e.to_string())),
+        (None, Some(name)) => Template::builtin(name).map(Some).map_err(|e| {
+            let known = scribe_core::list_builtin_themes().join(", ");
+            PyValueError::new_err(format!("{e} (known themes: {known})"))
+        }),
     }
 }
 
 /// Convert a Markdown string to ``.docx`` bytes.
 ///
-/// If ``reference_doc`` is given it must point to a ``.docx`` file whose
-/// styles will replace Folio's built-in ones.
+/// Pass ``reference_doc`` (path to a styled .docx) OR ``theme`` (a built-in
+/// name from :func:`list_themes`) to override Folio's default styles. The
+/// two are mutually exclusive.
 #[pyfunction]
-#[pyo3(signature = (markdown, reference_doc=None))]
+#[pyo3(signature = (markdown, reference_doc=None, theme=None))]
 fn convert<'py>(
     py: Python<'py>,
     markdown: &str,
     reference_doc: Option<&str>,
+    theme: Option<&str>,
 ) -> PyResult<Bound<'py, PyBytes>> {
-    let template = load_template(reference_doc)?;
+    let template = pick_template(reference_doc, theme)?;
     let bytes = py
         .allow_threads(|| scribe_core::convert_string_with_template(markdown, template.as_ref()))
         .map_err(map_err)?;
@@ -52,14 +61,15 @@ fn convert<'py>(
 /// Convert a Markdown file at ``input`` into a ``.docx`` file at ``output``.
 /// Relative image paths are resolved against the input file's parent directory.
 #[pyfunction]
-#[pyo3(signature = (input, output, reference_doc=None))]
+#[pyo3(signature = (input, output, reference_doc=None, theme=None))]
 fn convert_file(
     py: Python<'_>,
     input: &str,
     output: &str,
     reference_doc: Option<&str>,
+    theme: Option<&str>,
 ) -> PyResult<()> {
-    let template = load_template(reference_doc)?;
+    let template = pick_template(reference_doc, theme)?;
     py.allow_threads(|| {
         scribe_core::convert_file_with_template(input, output, template.as_ref())
     })
@@ -78,12 +88,19 @@ fn preview_standalone(py: Python<'_>, markdown: &str) -> String {
     py.allow_threads(|| scribe_core::preview_standalone(markdown))
 }
 
+/// Names of built-in themes accepted by ``convert(theme=...)``.
+#[pyfunction]
+fn list_themes() -> Vec<&'static str> {
+    scribe_core::list_builtin_themes()
+}
+
 #[pymodule]
 fn _folio(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(convert, m)?)?;
     m.add_function(wrap_pyfunction!(convert_file, m)?)?;
     m.add_function(wrap_pyfunction!(preview_html, m)?)?;
     m.add_function(wrap_pyfunction!(preview_standalone, m)?)?;
+    m.add_function(wrap_pyfunction!(list_themes, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }
