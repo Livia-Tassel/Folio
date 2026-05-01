@@ -36,6 +36,10 @@ features = ["pyo3/extension-module"]
 include = [
     { path = "python/folio/__init__.pyi", format = "wheel" },
     { path = "python/folio/py.typed", format = "wheel" },
+    # Maturin's sdist for a workspace-member crate doesn't include
+    # repo-root files automatically; PyPI rejects the tarball when
+    # PKG-INFO declares License-File but LICENSE is absent.
+    { path = "LICENSE", format = "sdist" },
 ]
 
 [tool.pytest.ini_options]

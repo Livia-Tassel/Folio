@@ -9,6 +9,24 @@ Python wheels all share one version.
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-05-01
+
+### Fixed
+
+- PyPI source distribution upload for 0.2.0 was rejected with
+  `400 License-File LICENSE does not exist` — the sdist's PKG-INFO
+  declared a license file but maturin's workspace-member sdist
+  flow did not include the repo-root LICENSE in the tarball. The
+  4 binary wheels (linux x86_64 / aarch64, macOS arm64, Windows
+  x64) had uploaded successfully and `pip install folio-docx`
+  works on those platforms even on 0.2.0; this release adds the
+  missing sdist for users on platforms where no wheel is
+  available (FreeBSD, musl-based Linux, etc.).
+
+`pyproject.toml` adds an explicit `{ path = "LICENSE", format =
+"sdist" }` to `[tool.maturin].include` so the rule is documented
+where future contributors will see it.
+
 ## [0.2.0] — 2026-05-01
 
 The "branded Word out, no cleanup pass" release. Folio now ships a
@@ -144,7 +162,8 @@ code blocks, footnotes, page-fit images, GFM tables. Cross-platform
 Tauri 2 desktop shell, SvelteKit live-preview pane, `scribe-cli` for
 headless conversion, CI matrix on macOS, Windows, and Ubuntu.
 
-[Unreleased]: https://github.com/Livia-Tassel/Folio/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Livia-Tassel/Folio/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Livia-Tassel/Folio/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Livia-Tassel/Folio/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/Livia-Tassel/Folio/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Livia-Tassel/Folio/compare/v0.1.2...v0.1.3
