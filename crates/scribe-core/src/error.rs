@@ -14,4 +14,7 @@ pub enum ConvertError {
 
     #[error("docx emission failed: {0}")]
     Emit(#[source] anyhow::Error),
+
+    #[error("reference template error: {0}")]
+    Template(#[from] scribe_template::TemplateError),
 }

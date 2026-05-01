@@ -11,21 +11,40 @@
 use pyo3::exceptions::{PyIOError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
-use scribe_core::ConvertError;
+use scribe_core::{ConvertError, Template};
 
 fn map_err(e: ConvertError) -> PyErr {
     match e {
         ConvertError::Read(io) => PyIOError::new_err(io.to_string()),
         ConvertError::Write(io) => PyIOError::new_err(io.to_string()),
         ConvertError::Emit(an) => PyValueError::new_err(an.to_string()),
+        ConvertError::Template(te) => PyValueError::new_err(te.to_string()),
+    }
+}
+
+fn load_template(path: Option<&str>) -> PyResult<Option<Template>> {
+    match path {
+        None => Ok(None),
+        Some(p) => Template::from_reference_doc(p)
+            .map(Some)
+            .map_err(|e| PyValueError::new_err(e.to_string())),
     }
 }
 
 /// Convert a Markdown string to ``.docx`` bytes.
+///
+/// If ``reference_doc`` is given it must point to a ``.docx`` file whose
+/// styles will replace Folio's built-in ones.
 #[pyfunction]
-fn convert<'py>(py: Python<'py>, markdown: &str) -> PyResult<Bound<'py, PyBytes>> {
+#[pyo3(signature = (markdown, reference_doc=None))]
+fn convert<'py>(
+    py: Python<'py>,
+    markdown: &str,
+    reference_doc: Option<&str>,
+) -> PyResult<Bound<'py, PyBytes>> {
+    let template = load_template(reference_doc)?;
     let bytes = py
-        .allow_threads(|| scribe_core::convert_string(markdown))
+        .allow_threads(|| scribe_core::convert_string_with_template(markdown, template.as_ref()))
         .map_err(map_err)?;
     Ok(PyBytes::new_bound(py, &bytes))
 }
@@ -33,9 +52,18 @@ fn convert<'py>(py: Python<'py>, markdown: &str) -> PyResult<Bound<'py, PyBytes>
 /// Convert a Markdown file at ``input`` into a ``.docx`` file at ``output``.
 /// Relative image paths are resolved against the input file's parent directory.
 #[pyfunction]
-fn convert_file(py: Python<'_>, input: &str, output: &str) -> PyResult<()> {
-    py.allow_threads(|| scribe_core::convert_file(input, output))
-        .map_err(map_err)
+#[pyo3(signature = (input, output, reference_doc=None))]
+fn convert_file(
+    py: Python<'_>,
+    input: &str,
+    output: &str,
+    reference_doc: Option<&str>,
+) -> PyResult<()> {
+    let template = load_template(reference_doc)?;
+    py.allow_threads(|| {
+        scribe_core::convert_file_with_template(input, output, template.as_ref())
+    })
+    .map_err(map_err)
 }
 
 /// Render a Markdown string as an HTML preview fragment (no ``<html>`` wrapper).

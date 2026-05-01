@@ -32,7 +32,7 @@ const FIRST_LIST_NUM_ID: usize = 1_001;
 
 /// Convert a [`Document`] into `.docx` bytes.
 pub fn emit(doc: &Document) -> anyhow::Result<Vec<u8>> {
-    emit_with_base(doc, None)
+    emit_with_options(doc, EmitOptions::default())
 }
 
 /// Emit with an explicit base directory used to resolve relative image paths.
@@ -40,6 +40,28 @@ pub fn emit_with_base(
     doc: &Document,
     base_dir: Option<std::path::PathBuf>,
 ) -> anyhow::Result<Vec<u8>> {
+    emit_with_options(
+        doc,
+        EmitOptions {
+            base_dir,
+            ..Default::default()
+        },
+    )
+}
+
+/// Knobs for [`emit_with_options`]. Use the `..Default::default()` shorthand
+/// to set only what you need.
+#[derive(Default)]
+pub struct EmitOptions<'a> {
+    /// Base path used to resolve relative image URLs.
+    pub base_dir: Option<std::path::PathBuf>,
+    /// If set, the output's `word/styles.xml` is replaced byte-for-byte
+    /// with this content. Used to honour a reference template's styles.
+    pub styles_xml_override: Option<&'a str>,
+}
+
+/// Master emit entry. The other `emit*` functions are thin wrappers.
+pub fn emit_with_options(doc: &Document, opts: EmitOptions<'_>) -> anyhow::Result<Vec<u8>> {
     let mut out = Docx::new();
     out = register_builtin_styles(out);
     out = register_numbering(out);
@@ -49,7 +71,7 @@ pub fn emit_with_base(
         math_map: HashMap::new(),
         math_counter: 0,
         next_list_num_id: FIRST_LIST_NUM_ID,
-        base_dir,
+        base_dir: opts.base_dir,
     };
 
     for block in &doc.blocks {
@@ -59,11 +81,18 @@ pub fn emit_with_base(
     let mut buf: Vec<u8> = Vec::new();
     out.build().pack(&mut Cursor::new(&mut buf))?;
 
-    if ctx.math_map.is_empty() {
-        Ok(buf)
+    let buf = if ctx.math_map.is_empty() {
+        buf
     } else {
-        postprocess_math(&buf, &ctx.math_map)
-    }
+        postprocess_math(&buf, &ctx.math_map)?
+    };
+
+    let buf = match opts.styles_xml_override {
+        Some(xml) => postprocess_styles(&buf, xml)?,
+        None => buf,
+    };
+
+    Ok(buf)
 }
 
 struct EmitCtx<'a> {
@@ -1109,6 +1138,52 @@ mod tests {
             "code styles must declare a w:eastAsia font; got styles.xml: {styles_xml}"
         );
     }
+
+    #[test]
+    fn emit_with_options_replaces_styles_xml_when_override_supplied() {
+        // The whole point of reference-doc support: the user's styles.xml
+        // wins, regardless of what Folio's built-in styles would have said.
+        // After emit_with_options, the output zip's word/styles.xml must
+        // be byte-identical to the override we passed in.
+        let custom = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+  <w:style w:type="paragraph" w:styleId="MyCustomHeading"><w:name w:val="My Custom Heading"/></w:style>
+</w:styles>"#;
+
+        let doc = doc_from(vec![Block::Heading {
+            level: 1,
+            content: vec![Inline::Text("Hello".into())],
+        }]);
+
+        let bytes = emit_with_options(
+            &doc,
+            EmitOptions {
+                styles_xml_override: Some(custom),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let got = zip_entry_text(&bytes, "word/styles.xml");
+        assert_eq!(got, custom);
+    }
+
+    #[test]
+    fn emit_with_options_default_keeps_builtin_styles() {
+        // No override → built-in Folio styles must still be present in
+        // word/styles.xml. Adding the new entry point must not
+        // accidentally bypass `register_builtin_styles`.
+        let doc = doc_from(vec![Block::Paragraph {
+            content: vec![Inline::Text("body".into())],
+        }]);
+        let bytes = emit_with_options(&doc, EmitOptions::default()).unwrap();
+        let styles = zip_entry_text(&bytes, "word/styles.xml");
+        assert!(
+            styles.contains("Heading1") && styles.contains("SourceCode"),
+            "default emit must include built-in styles; got: {styles}"
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1144,6 +1219,40 @@ fn postprocess_math(
                 writer.start_file(name, opts)?;
                 writer.write_all(replaced.as_bytes())?;
             } else {
+                writer.start_file(name, opts)?;
+                writer.write_all(&data)?;
+            }
+        }
+        writer.finish()?;
+    }
+    Ok(out_buf)
+}
+
+/// Replace `word/styles.xml` in a packed `.docx` with `replacement_xml`,
+/// passing every other entry through unchanged. Used to honour a reference
+/// template's styles instead of the built-in ones.
+fn postprocess_styles(zip_bytes: &[u8], replacement_xml: &str) -> anyhow::Result<Vec<u8>> {
+    let cursor = Cursor::new(zip_bytes);
+    let mut reader = zip::ZipArchive::new(cursor)?;
+
+    let mut out_buf: Vec<u8> = Vec::with_capacity(zip_bytes.len());
+    {
+        let out_cursor = Cursor::new(&mut out_buf);
+        let mut writer = zip::ZipWriter::new(out_cursor);
+
+        for i in 0..reader.len() {
+            let mut entry = reader.by_index(i)?;
+            let name = entry.name().to_string();
+            let opts: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+                .compression_method(entry.compression())
+                .last_modified_time(entry.last_modified().unwrap_or_default());
+
+            if name == "word/styles.xml" {
+                writer.start_file(name, opts)?;
+                writer.write_all(replacement_xml.as_bytes())?;
+            } else {
+                let mut data = Vec::with_capacity(entry.size() as usize);
+                entry.read_to_end(&mut data)?;
                 writer.start_file(name, opts)?;
                 writer.write_all(&data)?;
             }

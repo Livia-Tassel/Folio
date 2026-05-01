@@ -89,3 +89,64 @@ def test_convert_releases_gil_for_concurrent_calls() -> None:
     assert not errors, f"thread errors: {errors}"
     assert len(results) == 4
     assert all(r[:2] == b"PK" for r in results)
+
+
+def _build_minimal_reference_docx(styles_xml: str, dest: Path) -> Path:
+    """Pack a minimal .docx-like archive with just word/styles.xml."""
+    import zipfile
+
+    with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("word/styles.xml", styles_xml)
+    return dest
+
+
+def test_convert_with_reference_doc_replaces_styles(tmp_path: Path) -> None:
+    sentinel = "FolioPyReferenceSentinel_456"
+    custom_styles = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">\n'
+        f'  <w:style w:styleId="{sentinel}"><w:name w:val="{sentinel}"/></w:style>\n'
+        "</w:styles>"
+    )
+    ref = _build_minimal_reference_docx(custom_styles, tmp_path / "ref.docx")
+
+    out = folio.convert("# hi", reference_doc=str(ref))
+
+    # Pull out word/styles.xml from the resulting .docx and confirm it
+    # carries the sentinel from our reference doc.
+    import io
+    import zipfile
+
+    with zipfile.ZipFile(io.BytesIO(out)) as z:
+        styles = z.read("word/styles.xml").decode("utf-8")
+    assert sentinel in styles
+
+
+def test_convert_file_with_reference_doc(tmp_path: Path) -> None:
+    sentinel = "FolioPyFileRefSentinel_789"
+    custom_styles = (
+        '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        f'<w:style w:styleId="{sentinel}"/></w:styles>'
+    )
+    ref = _build_minimal_reference_docx(custom_styles, tmp_path / "ref.docx")
+    src = tmp_path / "in.md"
+    dst = tmp_path / "out.docx"
+    src.write_text("# Title\n", encoding="utf-8")
+
+    folio.convert_file(str(src), str(dst), reference_doc=str(ref))
+
+    import zipfile
+
+    with zipfile.ZipFile(dst) as z:
+        styles = z.read("word/styles.xml").decode("utf-8")
+    assert sentinel in styles
+
+
+def test_convert_with_invalid_reference_doc_raises_value_error(tmp_path: Path) -> None:
+    # A file that is not a valid zip should produce a helpful ValueError,
+    # not a crash or a silently-broken .docx.
+    bogus = tmp_path / "not-a-docx.txt"
+    bogus.write_bytes(b"this is not a zip archive")
+
+    with pytest.raises(ValueError):
+        folio.convert("# hi", reference_doc=str(bogus))

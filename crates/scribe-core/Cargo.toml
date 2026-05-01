@@ -8,6 +8,7 @@ license.workspace = true
 scribe-parser = { workspace = true }
 scribe-docx = { workspace = true }
 scribe-preview = { workspace = true }
+scribe-template = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 
