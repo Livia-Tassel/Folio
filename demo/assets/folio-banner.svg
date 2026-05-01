@@ -1,0 +1,15 @@
+<svg width="1600" height="360" viewBox="0 0 1600 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="360" rx="36" fill="url(#bg)"/>
+  <rect x="54" y="54" width="1492" height="252" rx="28" fill="#0F172A" fill-opacity="0.14"/>
+  <rect x="74" y="74" width="1452" height="212" rx="26" fill="#2563EB"/>
+  <circle cx="184" cy="180" r="56" fill="#DBEAFE"/>
+  <path d="M157 181h54M184 154v54" stroke="#2563EB" stroke-width="16" stroke-linecap="round"/>
+  <text x="290" y="170" fill="white" font-family="SF Pro Display, Inter, sans-serif" font-size="86" font-weight="700">Folio</text>
+  <text x="290" y="228" fill="#DBEAFE" font-family="SF Pro Text, Inter, sans-serif" font-size="36">Markdown to polished .docx output</text>
+  <defs>
+    <linearGradient id="bg" x1="40" y1="22" x2="1548" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#C7D2FE"/>
+    </linearGradient>
+  </defs>
+</svg>
